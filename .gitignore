@@ -1,1 +1,8 @@
-/源码参考
+node_modules/
+dist/
+dist-electron/
+release/
+.vite/
+*.log
+
+源码参考/
