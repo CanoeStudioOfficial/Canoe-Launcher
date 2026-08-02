@@ -1,0 +1,9 @@
+plugins {
+    id 'base'
+}
+
+tasks.register('coreJar') {
+    group = 'build'
+    description = 'Builds the Java launcher core jar.'
+    dependsOn ':launcher-core:jar'
+}

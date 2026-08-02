@@ -41,6 +41,29 @@ export interface LauncherSettings {
   concurrentDownloads: number;
   downloadMirror: "Official" | "BMCLAPI" | "MCBBS";
   closeAfterLaunch: boolean;
+  playerName: string;
+  accountType: "offline" | "microsoft";
+  profileId: string;
+}
+
+export interface LauncherAccount {
+  id: string;
+  type: "offline" | "microsoft";
+  username: string;
+  createdAt?: string;
+}
+
+export interface GameProcess {
+  processId: string;
+  packId: string;
+  pid: number;
+  status: "running" | "exited" | "stopped";
+  exitCode?: number | null;
+  startedAt: string;
+  exitedAt?: string | null;
+  runDirectory: string;
+  logFile: string;
+  command: string[];
 }
 
 export interface LaunchJobEvent {

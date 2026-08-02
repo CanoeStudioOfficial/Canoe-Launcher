@@ -10,9 +10,11 @@
   },
   "main": "dist-electron/main.js",
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
+    "core:build": "node scripts/gradle-core.mjs :launcher-core:build",
+    "core:run": "node scripts/gradle-core.mjs :launcher-core:run",
+    "dev": "npm run core:build && vite --host 127.0.0.1",
     "typecheck": "vue-tsc --noEmit",
-    "build": "vue-tsc --noEmit && vite build && electron-builder",
+    "build": "npm run core:build && vue-tsc --noEmit && vite build && electron-builder",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
@@ -37,7 +39,14 @@
     },
     "files": [
       "dist",
-      "dist-electron"
+      "dist-electron",
+      "launcher-core/build/libs/canoe-launcher-core.jar"
+    ],
+    "extraResources": [
+      {
+        "from": "launcher-core/build/libs/canoe-launcher-core.jar",
+        "to": "launcher-core/canoe-launcher-core.jar"
+      }
     ],
     "win": {
       "target": "nsis"

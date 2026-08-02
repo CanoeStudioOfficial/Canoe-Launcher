@@ -457,6 +457,20 @@ function jobMessage(job: LaunchJobEvent) {
                 <option value="MCBBS">MCBBS</option>
               </select>
             </label>
+            <label class="setting-row">
+              <span>{{ t("settings.playerName") }}</span>
+              <input :value="settings.playerName" @change="saveSetting('playerName', ($event.target as HTMLInputElement).value)" />
+            </label>
+            <label class="setting-row">
+              <span>{{ t("settings.accountType") }}</span>
+              <select
+                :value="settings.accountType"
+                @change="saveSetting('accountType', ($event.target as HTMLSelectElement).value as LauncherSettings['accountType'])"
+              >
+                <option value="offline">{{ t("settings.offlineAccount") }}</option>
+                <option value="microsoft">{{ t("settings.microsoftAccount") }}</option>
+              </select>
+            </label>
             <label class="toggle-row">
               <span>{{ t("settings.closeAfterLaunch") }}</span>
               <input

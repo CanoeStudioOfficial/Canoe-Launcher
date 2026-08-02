@@ -41,6 +41,10 @@ const messages = {
     "settings.concurrentDownloads": "下载并发",
     "settings.downloadMirror": "下载源",
     "settings.closeAfterLaunch": "启动后关闭启动器",
+    "settings.playerName": "玩家名",
+    "settings.accountType": "账号类型",
+    "settings.offlineAccount": "离线账号",
+    "settings.microsoftAccount": "Microsoft 账号",
     "settings.autoDetect": "自动检测",
     "status.remote": "未安装",
     "status.installed": "已安装",
@@ -105,6 +109,10 @@ const messages = {
     "settings.concurrentDownloads": "下載並行數",
     "settings.downloadMirror": "下載來源",
     "settings.closeAfterLaunch": "啟動後關閉啟動器",
+    "settings.playerName": "玩家名稱",
+    "settings.accountType": "帳號類型",
+    "settings.offlineAccount": "離線帳號",
+    "settings.microsoftAccount": "Microsoft 帳號",
     "settings.autoDetect": "自動偵測",
     "status.remote": "未安裝",
     "status.installed": "已安裝",
@@ -169,6 +177,10 @@ const messages = {
     "settings.concurrentDownloads": "Concurrent downloads",
     "settings.downloadMirror": "Download mirror",
     "settings.closeAfterLaunch": "Close launcher after launch",
+    "settings.playerName": "Player name",
+    "settings.accountType": "Account type",
+    "settings.offlineAccount": "Offline account",
+    "settings.microsoftAccount": "Microsoft account",
     "settings.autoDetect": "Auto detect",
     "status.remote": "Not installed",
     "status.installed": "Installed",
@@ -291,7 +303,7 @@ const packCopy: Record<
 const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body">>> = {
   "zh-CN": {
     "core-roadmap": {
-      title: "HMCLCore 适配层已预留",
+      title: "Canoe Java Core 已接入",
       body: "安装、更新、启动、修复和日志接口已经通过 IPC 收口。",
     },
     "pack-policy": {
@@ -305,7 +317,7 @@ const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body
   },
   "zh-TW": {
     "core-roadmap": {
-      title: "HMCLCore 適配層已預留",
+      title: "Canoe Java Core 已接入",
       body: "安裝、更新、啟動、修復和日誌介面已經透過 IPC 收口。",
     },
     "pack-policy": {
@@ -319,8 +331,8 @@ const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body
   },
   en: {
     "core-roadmap": {
-      title: "HMCLCore adapter boundary is ready",
-      body: "Install, update, launch, repair, and log flows are already routed through IPC.",
+      title: "Canoe Java Core is active",
+      body: "Install, update, launch, repair, and log flows are routed through Canoe's own Java runtime bridge.",
     },
     "pack-policy": {
       title: "Pack manifests use a signable format",

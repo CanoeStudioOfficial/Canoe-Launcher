@@ -1,4 +1,4 @@
-import type { LaunchJobEvent, LauncherLibrary, LauncherSettings } from "@/types/launcher";
+import type { GameProcess, LaunchJobEvent, LauncherAccount, LauncherLibrary, LauncherSettings } from "@/types/launcher";
 
 const mockLibrary: LauncherLibrary = {
   featuredPackId: "canoe-origins",
@@ -78,6 +78,9 @@ const mockSettings: LauncherSettings = {
   concurrentDownloads: 6,
   downloadMirror: "BMCLAPI",
   closeAfterLaunch: false,
+  playerName: "LocalPlayer",
+  accountType: "offline",
+  profileId: "b50ad385-829d-3141-a216-7e7d7539ba7f",
 };
 
 export const launcherClient = {
@@ -96,6 +99,42 @@ export const launcherClient = {
 
     Object.assign(mockSettings, patch);
     return mockSettings;
+  },
+
+  async listAccounts(): Promise<LauncherAccount[]> {
+    return window.canoeLauncher?.listAccounts() ?? [
+      {
+        id: mockSettings.profileId,
+        type: mockSettings.accountType,
+        username: mockSettings.playerName,
+      },
+    ];
+  },
+
+  async addOfflineAccount(username: string): Promise<LauncherAccount> {
+    if (window.canoeLauncher) {
+      return window.canoeLauncher.addOfflineAccount(username);
+    }
+
+    mockSettings.playerName = username;
+    mockSettings.accountType = "offline";
+    return {
+      id: mockSettings.profileId,
+      type: "offline",
+      username,
+    };
+  },
+
+  async listProcesses(): Promise<GameProcess[]> {
+    return window.canoeLauncher?.listProcesses() ?? [];
+  },
+
+  async stopProcess(processId: string): Promise<GameProcess> {
+    if (window.canoeLauncher) {
+      return window.canoeLauncher.stopProcess(processId);
+    }
+
+    throw new Error(`No process registry is available for ${processId}`);
   },
 
   async installPack(packId: string): Promise<LaunchJobEvent> {

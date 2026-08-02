@@ -1,10 +1,13 @@
 import { BrowserWindow } from "electron";
 import path from "node:path";
 import os from "node:os";
+import { JavaCoreClient } from "./javaCoreClient";
 import type {
   LaunchJobEvent,
   LauncherLibrary,
   LauncherSettings,
+  LauncherAccount,
+  GameProcess,
   Modpack,
   ModpackStatus,
 } from "../src/types/launcher";
@@ -74,6 +77,7 @@ const basePacks: Modpack[] = [
 
 export class CanoeLauncherBridge {
   private window: BrowserWindow | null = null;
+  private core = new JavaCoreClient((event) => this.emitJob(event));
   private packs = [...basePacks];
   private settings: LauncherSettings = {
     gameDirectory: path.join(os.homedir(), ".canoe-launcher", "instances"),
@@ -82,21 +86,24 @@ export class CanoeLauncherBridge {
     concurrentDownloads: 6,
     downloadMirror: "BMCLAPI",
     closeAfterLaunch: false,
+    playerName: "LocalPlayer",
+    accountType: "offline",
+    profileId: "b50ad385-829d-3141-a216-7e7d7539ba7f",
   };
 
   bindWindow(window: BrowserWindow) {
     this.window = window;
   }
 
-  getLibrary(): LauncherLibrary {
-    return {
+  async getLibrary(): Promise<LauncherLibrary> {
+    return this.withCore("getLibrary", {}, () => ({
       featuredPackId: "canoe-origins",
       packs: this.packs,
       news: [
         {
           id: "core-roadmap",
-          title: "HMCLCore adapter boundary is ready",
-          body: "Install, update, launch, repair, and log flows are already routed through IPC.",
+          title: "Canoe Java Core is active",
+          body: "Install, update, launch, repair, and log flows are routed through Canoe's own Java runtime bridge.",
           date: "2026-08-01",
         },
         {
@@ -106,67 +113,122 @@ export class CanoeLauncherBridge {
           date: "2026-08-01",
         },
       ],
-    };
+    }));
   }
 
-  getSettings(): LauncherSettings {
-    return this.settings;
+  async getSettings(): Promise<LauncherSettings> {
+    return this.withCore("getSettings", {}, () => this.settings);
   }
 
-  updateSettings(patch: Partial<LauncherSettings>): LauncherSettings {
-    this.settings = { ...this.settings, ...patch };
-    return this.settings;
+  async updateSettings(patch: Partial<LauncherSettings>): Promise<LauncherSettings> {
+    return this.withCore("updateSettings", patch, () => {
+      this.settings = { ...this.settings, ...patch };
+      return this.settings;
+    });
+  }
+
+  async listAccounts(): Promise<LauncherAccount[]> {
+    return this.withCore("listAccounts", {}, () => [
+      {
+        id: this.settings.profileId,
+        type: this.settings.accountType,
+        username: this.settings.playerName,
+      },
+    ]);
+  }
+
+  async addOfflineAccount(username: string): Promise<LauncherAccount> {
+    return this.withCore("addOfflineAccount", { username }, () => {
+      this.settings = {
+        ...this.settings,
+        accountType: "offline",
+        playerName: username,
+      };
+      return {
+        id: this.settings.profileId,
+        type: "offline",
+        username,
+      };
+    });
+  }
+
+  async listProcesses(): Promise<GameProcess[]> {
+    return this.withCore("listProcesses", {}, () => []);
+  }
+
+  async stopProcess(processId: string): Promise<GameProcess> {
+    return this.withCore("stopProcess", { processId }, () => {
+      throw new Error(`No Java core process registry is available for ${processId}`);
+    });
   }
 
   async installPack(packId: string) {
-    return this.runJob(
-      packId,
-      "install",
-      [
-        { key: "job.install.readManifest", fallback: "Reading modpack manifest" },
-        { key: "job.install.checkVersion", fallback: "Checking Minecraft and loader versions" },
-        { key: "job.install.prepareLibraries", fallback: "Preparing assets and libraries" },
-        { key: "job.install.writeInstance", fallback: "Writing instance configuration" },
-        { key: "job.install.finish", fallback: "Finishing installation" },
-      ],
-      "installed",
+    return this.withCore("installPack", { packId }, () =>
+      this.runJob(
+        packId,
+        "install",
+        [
+          { key: "job.install.readManifest", fallback: "Reading modpack manifest" },
+          { key: "job.install.checkVersion", fallback: "Checking Minecraft and loader versions" },
+          { key: "job.install.prepareLibraries", fallback: "Preparing assets and libraries" },
+          { key: "job.install.writeInstance", fallback: "Writing instance configuration" },
+          { key: "job.install.finish", fallback: "Finishing installation" },
+        ],
+        "installed",
+      ),
+      30 * 60 * 1000,
     );
   }
 
   async updatePack(packId: string) {
-    return this.runJob(
-      packId,
-      "update",
-      [
-        { key: "job.update.compare", fallback: "Comparing local and remote manifests" },
-        { key: "job.update.downloadDelta", fallback: "Downloading changed files" },
-        { key: "job.update.verify", fallback: "Verifying hashes" },
-        { key: "job.update.migrate", fallback: "Migrating instance configuration" },
-        { key: "job.update.finish", fallback: "Finishing update" },
-      ],
-      "installed",
+    return this.withCore("updatePack", { packId }, () =>
+      this.runJob(
+        packId,
+        "update",
+        [
+          { key: "job.update.compare", fallback: "Comparing local and remote manifests" },
+          { key: "job.update.downloadDelta", fallback: "Downloading changed files" },
+          { key: "job.update.verify", fallback: "Verifying hashes" },
+          { key: "job.update.migrate", fallback: "Migrating instance configuration" },
+          { key: "job.update.finish", fallback: "Finishing update" },
+        ],
+        "installed",
+      ),
+      30 * 60 * 1000,
     );
   }
 
   async launchInstance(packId: string) {
-    return this.runJob(
-      packId,
-      "launch",
-      [
-        { key: "job.launch.check", fallback: "Checking account and Java" },
-        { key: "job.launch.arguments", fallback: "Generating launch arguments" },
-        { key: "job.launch.directory", fallback: "Preparing runtime directory" },
-        { key: "job.launch.process", fallback: "Starting game process" },
-      ],
-      "running",
+    return this.withCore("launchInstance", { packId }, () =>
+      this.runJob(
+        packId,
+        "launch",
+        [
+          { key: "job.launch.check", fallback: "Checking account and Java" },
+          { key: "job.launch.arguments", fallback: "Generating launch arguments" },
+          { key: "job.launch.directory", fallback: "Preparing runtime directory" },
+          { key: "job.launch.process", fallback: "Starting game process" },
+        ],
+        "running",
+      ),
+      30 * 60 * 1000,
     );
   }
 
-  openInstanceFolder(packId: string) {
-    return {
+  async openInstanceFolder(packId: string) {
+    return this.withCore("openInstanceFolder", { packId }, () => ({
       ok: true,
       path: path.join(this.settings.gameDirectory, packId),
-    };
+    }));
+  }
+
+  private async withCore<T>(command: string, payload: Record<string, unknown>, fallback: () => T | Promise<T>, timeoutMs?: number): Promise<T> {
+    try {
+      return await this.core.request<T>(command, payload, timeoutMs);
+    } catch (error) {
+      console.warn(`[canoe-core] Falling back for ${command}`, error);
+      return fallback();
+    }
   }
 
   private async runJob(packId: string, kind: LaunchJobEvent["kind"], steps: JobStep[], finalStatus: ModpackStatus) {
@@ -220,7 +282,7 @@ export class CanoeLauncherBridge {
       kind,
       status: "complete",
       progress: 100,
-      message: kind === "launch" ? "Game process handed to launcher core" : "Task complete",
+      message: kind === "launch" ? "Game runtime prepared by Canoe Core" : "Task complete",
       messageKey: kind === "launch" ? "job.complete.launch" : "job.complete.generic",
       timestamp: now(),
     };

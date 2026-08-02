@@ -50,9 +50,13 @@ app.on("window-all-closed", () => {
 
 ipcMain.handle("launcher:get-library", () => launcher.getLibrary());
 ipcMain.handle("launcher:get-settings", () => launcher.getSettings());
+ipcMain.handle("launcher:list-accounts", () => launcher.listAccounts());
+ipcMain.handle("launcher:list-processes", () => launcher.listProcesses());
 ipcMain.handle("launcher:update-settings", (_event, patch) => launcher.updateSettings(patch));
+ipcMain.handle("launcher:add-offline-account", (_event, username: string) => launcher.addOfflineAccount(username));
 ipcMain.handle("launcher:install-pack", (_event, packId: string) => launcher.installPack(packId));
 ipcMain.handle("launcher:update-pack", (_event, packId: string) => launcher.updatePack(packId));
 ipcMain.handle("launcher:launch-instance", (_event, packId: string) => launcher.launchInstance(packId));
+ipcMain.handle("launcher:stop-process", (_event, processId: string) => launcher.stopProcess(processId));
 ipcMain.handle("launcher:open-folder", (_event, packId: string) => launcher.openInstanceFolder(packId));
 ipcMain.handle("shell:open-external", (_event, url: string) => shell.openExternal(url));

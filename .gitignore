@@ -3,6 +3,9 @@ dist/
 dist-electron/
 release/
 .vite/
+.gradle/
+**/build/
+launcher-core/gradle/
 *.log
 
 源码参考/
