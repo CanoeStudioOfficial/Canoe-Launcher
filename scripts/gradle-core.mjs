@@ -28,6 +28,9 @@ process.exit(result.status ?? 1);
 async function resolveGradleExecutable() {
   const wrapper = path.join(root, process.platform === "win32" ? "gradlew.bat" : "gradlew");
   if (fs.existsSync(wrapper)) {
+    if (process.platform !== "win32") {
+      fs.chmodSync(wrapper, 0o755);
+    }
     return wrapper;
   }
 

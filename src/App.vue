@@ -26,7 +26,7 @@ import type { LaunchJobEvent, LauncherLibrary, LauncherSettings, Modpack } from 
 
 const activeView = ref<"home" | "library" | "instances" | "settings">("home");
 const library = ref<LauncherLibrary | null>(null);
-const selectedPackId = ref("canoe-origins");
+const selectedPackId = ref("");
 const settings = ref<LauncherSettings | null>(null);
 const jobs = ref<LaunchJobEvent[]>([]);
 const searchQuery = ref("");
@@ -54,13 +54,15 @@ const localePreviewLabels: Record<Locale, string> = {
 
 const packs = computed(() => library.value?.packs ?? []);
 const localizedPacks = computed(() => packs.value.map(localizePack));
-const featuredPack = computed(() => localizedPacks.value.find((pack) => pack.id === library.value?.featuredPackId) ?? null);
+const featuredPack = computed(() => localizedPacks.value.find((pack) => pack.id === library.value?.featuredPackId) ?? localizedPacks.value[0] ?? null);
 const selectedPack = computed(() => localizedPacks.value.find((pack) => pack.id === selectedPackId.value) ?? featuredPack.value);
 const installedPacks = computed(() => localizedPacks.value.filter((pack) => pack.status !== "remote"));
 const localizedNews = computed(() => library.value?.news.map(localizeNews) ?? []);
 const latestJob = computed(() => jobs.value[0]);
 const activeJob = computed(() => jobs.value.find((job) => job.status === "running"));
+const hasPacks = computed(() => localizedPacks.value.length > 0);
 const activeLocaleOption = computed(() => localeOptions.value.find((option) => option.value === locale.value) ?? localeOptions.value[0]);
+
 const javaDisplayValue = computed(() => {
   if (!settings.value) {
     return "";
@@ -68,6 +70,7 @@ const javaDisplayValue = computed(() => {
 
   return settings.value.javaPath === "auto" ? t("settings.autoDetect") : settings.value.javaPath;
 });
+
 const filteredPacks = computed(() => {
   const query = searchQuery.value.trim().toLowerCase();
   if (!query) {
@@ -87,7 +90,7 @@ onMounted(async () => {
   ]);
 
   library.value = libraryPayload;
-  selectedPackId.value = libraryPayload.featuredPackId;
+  selectedPackId.value = libraryPayload.featuredPackId || libraryPayload.packs[0]?.id || "";
   settings.value = settingsPayload;
 
   launcherClient.onJobEvent((event) => {
@@ -259,9 +262,9 @@ function jobMessage(job: LaunchJobEvent) {
         </div>
       </header>
 
-      <template v-if="library && selectedPack && featuredPack">
+      <template v-if="library">
         <section v-if="activeView === 'home'" class="view-grid">
-          <article class="feature-panel">
+          <article v-if="featuredPack" class="feature-panel">
             <img :src="featuredPack.cover" alt="" />
             <div class="feature-copy">
               <span class="eyebrow">{{ featuredPack.studio }}</span>
@@ -276,6 +279,18 @@ function jobMessage(job: LaunchJobEvent) {
                 <component :is="primaryAction(featuredPack).icon" :size="19" />
                 <span>{{ busyPackId === featuredPack.id ? t("action.processing") : primaryAction(featuredPack).label }}</span>
               </button>
+            </div>
+          </article>
+
+          <article v-else class="feature-panel empty-feature">
+            <div class="empty-feature-mark">
+              <PackageOpen :size="42" />
+            </div>
+            <div class="feature-copy">
+              <span class="eyebrow">{{ t("empty.catalogEyebrow") }}</span>
+              <h1>{{ t("empty.noPacksTitle") }}</h1>
+              <p>{{ t("empty.noPacksBody") }}</p>
+              <button class="ghost-button" @click="activeView = 'settings'">{{ t("empty.reviewSettings") }}</button>
             </div>
           </article>
 
@@ -307,10 +322,10 @@ function jobMessage(job: LaunchJobEvent) {
 
           <section class="content-band">
             <div class="panel-heading">
-              <h2>{{ t("home.canoePacks") }}</h2>
+              <h2>{{ t("home.modpackCatalog") }}</h2>
               <button class="ghost-button" @click="activeView = 'library'">{{ t("home.viewAll") }}</button>
             </div>
-            <div class="pack-grid">
+            <div v-if="hasPacks" class="pack-grid">
               <button
                 v-for="pack in localizedPacks"
                 :key="pack.id"
@@ -321,8 +336,12 @@ function jobMessage(job: LaunchJobEvent) {
                 <img :src="pack.cover" alt="" />
                 <span class="status-pill">{{ statusLabel(pack) }}</span>
                 <strong>{{ pack.name }}</strong>
-                <small>{{ pack.minecraftVersion }} · {{ pack.loader }}</small>
+                <small>{{ pack.minecraftVersion }} / {{ pack.loader }}</small>
               </button>
+            </div>
+            <div v-else class="empty-inline">
+              <PackageOpen :size="22" />
+              <span>{{ t("empty.noCatalogInline") }}</span>
             </div>
           </section>
 
@@ -342,13 +361,13 @@ function jobMessage(job: LaunchJobEvent) {
         <section v-if="activeView === 'library'" class="library-view">
           <div class="section-title">
             <div>
-              <span class="eyebrow">Canoe Studio</span>
+              <span class="eyebrow">Catalog</span>
               <h1>{{ t("library.title") }}</h1>
             </div>
             <span>{{ t("library.count", { count: filteredPacks.length }) }}</span>
           </div>
 
-          <div class="library-layout">
+          <div v-if="hasPacks" class="library-layout">
             <div class="pack-list">
               <button
                 v-for="pack in filteredPacks"
@@ -366,7 +385,7 @@ function jobMessage(job: LaunchJobEvent) {
               </button>
             </div>
 
-            <article class="detail-panel">
+            <article v-if="selectedPack" class="detail-panel">
               <img :src="selectedPack.cover" alt="" class="detail-cover" />
               <div class="detail-content">
                 <span class="eyebrow">{{ selectedPack.studio }}</span>
@@ -405,6 +424,12 @@ function jobMessage(job: LaunchJobEvent) {
               </div>
             </article>
           </div>
+
+          <div v-else class="empty-state">
+            <PackageOpen :size="44" />
+            <strong>{{ t("empty.noPacksTitle") }}</strong>
+            <p>{{ t("empty.noPacksBody") }}</p>
+          </div>
         </section>
 
         <section v-if="activeView === 'instances'" class="instances-view">
@@ -416,12 +441,12 @@ function jobMessage(job: LaunchJobEvent) {
             <span>{{ t("instances.count", { count: installedPacks.length }) }}</span>
           </div>
 
-          <div class="instance-table">
+          <div v-if="installedPacks.length > 0" class="instance-table">
             <article v-for="pack in installedPacks" :key="pack.id" class="instance-row">
               <img :src="pack.cover" alt="" />
               <div>
                 <strong>{{ pack.name }}</strong>
-                <span>{{ pack.minecraftVersion }} · {{ pack.loader }} · {{ pack.version }}</span>
+                <span>{{ pack.minecraftVersion }} / {{ pack.loader }} / {{ pack.version }}</span>
               </div>
               <span class="status-pill">{{ statusLabel(pack) }}</span>
               <button class="icon-button bordered" :title="t('action.updateInstance')" :disabled="pack.version === pack.latestVersion" @click="updatePack(pack)">
@@ -432,6 +457,12 @@ function jobMessage(job: LaunchJobEvent) {
                 <span>{{ t("action.launch") }}</span>
               </button>
             </article>
+          </div>
+
+          <div v-else class="empty-state">
+            <PackageOpen :size="44" />
+            <strong>{{ t("empty.noInstancesTitle") }}</strong>
+            <p>{{ t("empty.noInstancesBody") }}</p>
           </div>
         </section>
 

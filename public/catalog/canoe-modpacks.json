@@ -1,51 +1,8 @@
 {
   "schemaVersion": 1,
-  "studio": "独木舟工作室",
+  "name": "Canoe Launcher Catalog",
   "defaultLocale": "zh-CN",
   "locales": ["zh-CN", "zh-TW", "en"],
-  "generatedAt": "2026-08-01T00:00:00.000Z",
-  "packs": [
-    {
-      "id": "canoe-origins",
-      "name": "独木舟：起源",
-      "localizedName": {
-        "zh-CN": "独木舟：起源",
-        "zh-TW": "獨木舟：起源",
-        "en": "Canoe: Origins"
-      },
-      "version": "1.3.0",
-      "minecraftVersion": "1.20.1",
-      "loader": "Forge",
-      "loaderVersion": "47.3.0",
-      "manifestUrl": "https://launcher.canoe.local/packs/canoe-origins/1.3.0/manifest.json"
-    },
-    {
-      "id": "canoe-machina",
-      "name": "独木舟：机械纪元",
-      "localizedName": {
-        "zh-CN": "独木舟：机械纪元",
-        "zh-TW": "獨木舟：機械紀元",
-        "en": "Canoe: Machina Age"
-      },
-      "version": "0.9.4",
-      "minecraftVersion": "1.20.1",
-      "loader": "Fabric",
-      "loaderVersion": "0.16.9",
-      "manifestUrl": "https://launcher.canoe.local/packs/canoe-machina/0.9.4/manifest.json"
-    },
-    {
-      "id": "canoe-wilderness",
-      "name": "独木舟：荒野札记",
-      "localizedName": {
-        "zh-CN": "独木舟：荒野札记",
-        "zh-TW": "獨木舟：荒野札記",
-        "en": "Canoe: Wilderness Notes"
-      },
-      "version": "0.4.1",
-      "minecraftVersion": "1.21.1",
-      "loader": "NeoForge",
-      "loaderVersion": "21.1.90",
-      "manifestUrl": "https://launcher.canoe.local/packs/canoe-wilderness/0.4.1/manifest.json"
-    }
-  ]
+  "generatedAt": "2026-08-02T00:00:00.000Z",
+  "packs": []
 }

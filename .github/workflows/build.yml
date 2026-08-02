@@ -38,6 +38,10 @@ jobs:
 
       - run: npm ci
 
+      - name: Prepare Gradle wrapper permissions
+        if: runner.os != 'Windows'
+        run: chmod +x ./gradlew
+
       - name: Install Linux packaging tools
         if: matrix.name == 'linux'
         run: sudo apt-get update && sudo apt-get install -y fakeroot rpm libarchive-tools
@@ -56,6 +60,7 @@ jobs:
             release/*.dmg
             release/*.exe
             release/*.pacman
+            release/*.pkg.tar.*
             release/*.rpm
             release/*.tar.gz
             release/*.tar.xz

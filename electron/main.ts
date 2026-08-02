@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, shell } from "electron";
+import { app, BrowserWindow, ipcMain, Menu, shell } from "electron";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { CanoeLauncherBridge } from "./launcherBridge";
@@ -16,6 +16,7 @@ function createWindow() {
     minHeight: 680,
     backgroundColor: "#f4f7f3",
     titleBarStyle: "hiddenInset",
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, "preload.js"),
       contextIsolation: true,
@@ -33,6 +34,7 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
   createWindow();
 
   app.on("activate", () => {

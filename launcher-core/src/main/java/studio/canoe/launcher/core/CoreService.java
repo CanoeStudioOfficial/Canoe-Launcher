@@ -5,7 +5,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,7 @@ public final class CoreService {
 
     private Map<String, Object> getLibrary() throws IOException {
         Map<String, Object> payload = new LinkedHashMap<>();
-        payload.put("featuredPackId", "canoe-origins");
+        payload.put("featuredPackId", "");
         payload.put("packs", packs());
         payload.put("news", news());
         return payload;
@@ -160,42 +159,8 @@ public final class CoreService {
         return payload;
     }
 
-    private List<Map<String, Object>> packs() throws IOException {
-        List<Map<String, Object>> packs = new ArrayList<>();
-        packs.add(pack("canoe-origins", "Canoe: Origins", "1.2.0", "1.3.0", "1.20.1", "Forge", "47.3.0", 6144, 6.8, "#3d8f6d", "/assets/pack-origins.svg"));
-        packs.add(pack("canoe-machina", "Canoe: Machina Age", "0.9.4", "0.9.4", "1.20.1", "Fabric", "0.16.9", 8192, 7.4, "#c97b37", "/assets/pack-machina.svg"));
-        packs.add(pack("canoe-wilderness", "Canoe: Wilderness Notes", "0.4.1", "0.4.1", "1.21.1", "NeoForge", "21.1.90", 4096, 4.2, "#5f7ccf", "/assets/pack-wilderness.svg"));
-        return packs;
-    }
-
-    private Map<String, Object> pack(String id, String name, String version, String latestVersion, String minecraftVersion, String loader, String loaderVersion, int memory, double size, String accent, String cover) throws IOException {
-        Map<String, Object> pack = new LinkedHashMap<>();
-        pack.put("id", id);
-        pack.put("name", name);
-        pack.put("studio", "Canoe Studio");
-        pack.put("summary", name + " modpack.");
-        pack.put("description", name + " managed by Canoe Launcher Core.");
-        pack.put("version", core.installedVersion(id).orElse(version));
-        pack.put("latestVersion", latestVersion);
-        pack.put("minecraftVersion", minecraftVersion);
-        pack.put("loader", loader);
-        pack.put("loaderVersion", loaderVersion);
-        pack.put("recommendedMemoryMb", memory);
-        pack.put("sizeGb", size);
-        pack.put("status", statusFor(id, version, latestVersion));
-        pack.put("tags", List.of("Canoe", loader, minecraftVersion));
-        pack.put("cover", cover);
-        pack.put("accent", accent);
-        pack.put("changelog", List.of("Managed by Canoe Java core", "Self-developed runtime and process bridge enabled"));
-        return pack;
-    }
-
-    private String statusFor(String packId, String fallbackVersion, String latestVersion) throws IOException {
-        if (!core.isInstalled(packId)) {
-            return "remote";
-        }
-        String installedVersion = core.installedVersion(packId).orElse(fallbackVersion);
-        return latestVersion.equals(installedVersion) ? "installed" : "updateAvailable";
+    private List<Map<String, Object>> packs() {
+        return List.of();
     }
 
     private List<Map<String, Object>> news() {
@@ -207,8 +172,8 @@ public final class CoreService {
 
         Map<String, Object> runtime = new LinkedHashMap<>();
         runtime.put("id", "pack-policy");
-        runtime.put("title", "Self-developed runtime boundary is ready");
-        runtime.put("body", "Install, launch, Java detection, account, download, and process-management calls stay inside the Canoe core.");
+        runtime.put("title", "Pack catalog is intentionally empty");
+        runtime.put("body", "No built-in modpacks are bundled until real releases exist.");
         runtime.put("date", "2026-08-02");
 
         return List.of(core, runtime);

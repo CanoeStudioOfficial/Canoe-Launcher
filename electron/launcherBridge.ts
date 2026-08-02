@@ -15,65 +15,7 @@ import type {
 const now = () => new Date().toISOString();
 type JobStep = { key: string; fallback: string };
 
-const basePacks: Modpack[] = [
-  {
-    id: "canoe-origins",
-    name: "Canoe: Origins",
-    studio: "Canoe Studio",
-    summary: "A long-term survival pack that blends exploration, light magic, and compact tech.",
-    description: "Built around base building, dimension exploration, and lightweight automation for long-running multiplayer worlds.",
-    version: "1.2.0",
-    latestVersion: "1.3.0",
-    minecraftVersion: "1.20.1",
-    loader: "Forge",
-    loaderVersion: "47.3.0",
-    recommendedMemoryMb: 6144,
-    sizeGb: 6.8,
-    status: "updateAvailable",
-    tags: ["Survival", "Exploration", "Magic", "Multiplayer"],
-    cover: "/assets/pack-origins.svg",
-    accent: "#3d8f6d",
-    changelog: ["Added a Twilight questline", "Improved server sync config", "Fixed several shader compatibility issues"],
-  },
-  {
-    id: "canoe-machina",
-    name: "Canoe: Machina Age",
-    studio: "Canoe Studio",
-    summary: "A technology-focused pack for automation players.",
-    description: "From early kinetic systems to late-game energy networks, with clear progression goals and stable performance.",
-    version: "0.9.4",
-    latestVersion: "0.9.4",
-    minecraftVersion: "1.20.1",
-    loader: "Fabric",
-    loaderVersion: "0.16.9",
-    recommendedMemoryMb: 8192,
-    sizeGb: 7.4,
-    status: "installed",
-    tags: ["Tech", "Automation", "Quests", "Performance"],
-    cover: "/assets/pack-machina.svg",
-    accent: "#c97b37",
-    changelog: ["Rebalanced ore processing rewards", "Added pre-launch configuration validation"],
-  },
-  {
-    id: "canoe-wilderness",
-    name: "Canoe: Wilderness Notes",
-    studio: "Canoe Studio",
-    summary: "A lighter pack focused on immersion, building, and terrain exploration.",
-    description: "Designed for relaxed exploration and builders while keeping the vanilla rhythm and enriching world generation.",
-    version: "0.4.1",
-    latestVersion: "0.4.1",
-    minecraftVersion: "1.21.1",
-    loader: "NeoForge",
-    loaderVersion: "21.1.90",
-    recommendedMemoryMb: 4096,
-    sizeGb: 4.2,
-    status: "remote",
-    tags: ["Building", "Terrain", "Lightweight", "Casual"],
-    cover: "/assets/pack-wilderness.svg",
-    accent: "#5f7ccf",
-    changelog: ["First public test release", "Bundled shader configuration templates"],
-  },
-];
+const basePacks: Modpack[] = [];
 
 export class CanoeLauncherBridge {
   private window: BrowserWindow | null = null;
@@ -97,19 +39,19 @@ export class CanoeLauncherBridge {
 
   async getLibrary(): Promise<LauncherLibrary> {
     return this.withCore("getLibrary", {}, () => ({
-      featuredPackId: "canoe-origins",
+      featuredPackId: "",
       packs: this.packs,
       news: [
         {
           id: "core-roadmap",
           title: "Canoe Java Core is active",
-          body: "Install, update, launch, repair, and log flows are routed through Canoe's own Java runtime bridge.",
+          body: "The launcher core is running. Add a real pack catalog before publishing install and launch entries.",
           date: "2026-08-01",
         },
         {
           id: "pack-policy",
-          title: "Pack manifests use a signable format",
-          body: "The launcher can later connect to Canoe Studio's own CDN and version index.",
+          title: "Pack catalog is intentionally empty",
+          body: "No built-in modpacks are bundled until real releases exist.",
           date: "2026-08-01",
         },
       ],
@@ -234,7 +176,7 @@ export class CanoeLauncherBridge {
   private async runJob(packId: string, kind: LaunchJobEvent["kind"], steps: JobStep[], finalStatus: ModpackStatus) {
     const pack = this.packs.find((item) => item.id === packId);
     if (!pack) {
-      throw new Error(`Unknown modpack: ${packId}`);
+      throw new Error(`No modpack is configured for ${packId}`);
     }
 
     const jobId = `${kind}-${packId}-${Date.now()}`;

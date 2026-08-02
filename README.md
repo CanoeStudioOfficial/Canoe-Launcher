@@ -1,6 +1,6 @@
 # Canoe Launcher
 
-Canoe Launcher is a cross-platform Minecraft modpack launcher for Canoe Studio packs. It starts from a modern Electron + Vue desktop shell and keeps the launcher core behind a clear subprocess protocol so the Minecraft runtime can evolve independently from the UI.
+Canoe Launcher is a cross-platform Minecraft launcher shell prepared for future Canoe modpack releases. It starts from a modern Electron + Vue desktop shell and keeps the launcher core behind a clear subprocess protocol so the Minecraft runtime can evolve independently from the UI.
 
 ## Stack
 
@@ -31,7 +31,7 @@ npm.cmd run dev
 
 This first version is a product-quality shell with a Canoe Java core:
 
-- Featured Canoe modpack library
+- Empty modpack catalog until real releases are connected
 - Installed instances page
 - Install, update, and launch progress events
 - Settings for Java, memory, downloads, mirrors, and launch behavior
