@@ -16,6 +16,7 @@ public final class CoreService {
     private final CanoeCoreFacade core;
     private final AccountStore accountStore = new AccountStore(stateRoot);
     private final CatalogStore catalogStore = new CatalogStore(stateRoot);
+    private final MicrosoftAuthService microsoftAuth = new MicrosoftAuthService();
     private CoreEventEmitter emitter = (event, payload) -> {
     };
     private Map<String, Object> settings;
@@ -39,6 +40,8 @@ public final class CoreService {
             case "listProcesses" -> core.listProcesses();
             case "updateSettings" -> updateSettings(payload);
             case "addOfflineAccount" -> addOfflineAccount(payload);
+            case "startMicrosoftLogin" -> startMicrosoftLogin();
+            case "pollMicrosoftLogin" -> pollMicrosoftLogin(payload);
             case "createVanillaInstance" -> createVanillaInstance(payload);
             case "installPack" -> installPack(requiredString(payload, "packId"));
             case "updatePack" -> updatePack(requiredString(payload, "packId"));
@@ -86,9 +89,38 @@ public final class CoreService {
         settings = new LinkedHashMap<>(settings);
         settings.put("playerName", username);
         settings.put("profileId", account.get("id"));
+        settings.put("selectedAccountId", account.get("id"));
         settings.put("accountType", "offline");
         saveSettings();
         return account;
+    }
+
+    private Map<String, Object> startMicrosoftLogin() throws IOException, InterruptedException {
+        return microsoftAuth.startDeviceCode(microsoftClientId(null, true));
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> pollMicrosoftLogin(Map<String, Object> payload) throws IOException, InterruptedException {
+        Map<String, Object> result = microsoftAuth.pollDeviceCode(microsoftClientId(null, true), requiredString(payload, "deviceCode"));
+        if (!"complete".equals(result.get("status"))) {
+            return result;
+        }
+
+        Object accountValue = result.get("account");
+        if (!(accountValue instanceof Map<?, ?> accountMap)) {
+            throw new IOException("Microsoft login completed without an account profile.");
+        }
+
+        Map<String, Object> storedAccount = accountStore.addMicrosoftAccount((Map<String, Object>) accountMap);
+        settings = new LinkedHashMap<>(settings);
+        settings.put("accountType", "microsoft");
+        settings.put("playerName", storedAccount.get("username"));
+        settings.put("profileId", storedAccount.get("id"));
+        settings.put("selectedAccountId", storedAccount.get("id"));
+        saveSettings();
+
+        result.put("account", storedAccount);
+        return result;
     }
 
     private Map<String, Object> createVanillaInstance(Map<String, Object> payload) throws IOException {
@@ -121,7 +153,7 @@ public final class CoreService {
                 step("job.launch.arguments", "Generating launch arguments"),
                 step("job.launch.directory", "Preparing runtime directory"),
                 step("job.launch.process", "Starting or staging the game process")
-        ), () -> core.launchInstance(packById(packId), settings, accountStore.accountFromSettings(settings), emitter));
+        ), () -> core.launchInstance(packById(packId), settings, activeAccount(), emitter));
     }
 
     private Map<String, Object> stopProcess(String processId) throws Exception {
@@ -210,6 +242,8 @@ public final class CoreService {
         loaded.putIfAbsent("playerName", "LocalPlayer");
         loaded.putIfAbsent("accountType", "offline");
         loaded.putIfAbsent("profileId", UUID.nameUUIDFromBytes("OfflinePlayer:LocalPlayer".getBytes(StandardCharsets.UTF_8)).toString());
+        loaded.putIfAbsent("selectedAccountId", loaded.get("profileId"));
+        loaded.putIfAbsent("microsoftClientId", "");
         return loaded;
     }
 
@@ -223,6 +257,63 @@ public final class CoreService {
                 .filter(pack -> packId.equals(pack.get("id")))
                 .findFirst()
                 .orElseThrow(() -> new IllegalArgumentException("Unknown modpack: " + packId));
+    }
+
+    private Map<String, Object> activeAccount() throws IOException, InterruptedException {
+        Map<String, Object> account = accountStore.accountFromSettings(settings);
+        if (!"microsoft".equals(account.get("type")) || !isExpired(account.get("expiresAt"))) {
+            return account;
+        }
+
+        Map<String, Object> refreshed = microsoftAuth.refreshMinecraftSession(microsoftClientId(account, true), account);
+        Map<String, Object> stored = accountStore.addMicrosoftAccount(refreshed);
+        settings = new LinkedHashMap<>(settings);
+        settings.put("playerName", stored.get("username"));
+        settings.put("profileId", stored.get("id"));
+        settings.put("selectedAccountId", stored.get("id"));
+        settings.put("accountType", "microsoft");
+        saveSettings();
+        return accountStore.accountFromSettings(settings);
+    }
+
+    private boolean isExpired(Object expiresAt) {
+        if (expiresAt == null || String.valueOf(expiresAt).isBlank()) {
+            return true;
+        }
+        try {
+            return Instant.parse(String.valueOf(expiresAt)).minusSeconds(300).isBefore(Instant.now());
+        } catch (RuntimeException ignored) {
+            return true;
+        }
+    }
+
+    private String microsoftClientId(Map<String, Object> account, boolean required) {
+        if (account != null) {
+            Object fromAccount = account.get("clientId");
+            if (fromAccount != null && !String.valueOf(fromAccount).isBlank()) {
+                return String.valueOf(fromAccount).trim();
+            }
+        }
+
+        String fromSettings = stringSetting("microsoftClientId");
+        if (!fromSettings.isBlank()) {
+            return fromSettings;
+        }
+
+        String fromEnv = System.getenv("CANOE_MICROSOFT_CLIENT_ID");
+        if (fromEnv != null && !fromEnv.isBlank()) {
+            return fromEnv.trim();
+        }
+
+        if (required) {
+            throw new IllegalStateException("Microsoft OAuth client ID is not configured. Set microsoftClientId in launcher settings or CANOE_MICROSOFT_CLIENT_ID.");
+        }
+        return "";
+    }
+
+    private String stringSetting(String key) {
+        Object value = settings.get(key);
+        return value == null ? "" : String.valueOf(value).trim();
     }
 
     private static JobStep step(String key, String fallback) {

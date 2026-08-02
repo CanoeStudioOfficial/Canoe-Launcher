@@ -382,9 +382,10 @@ public final class MinecraftRuntime {
         variables.put("auth_player_name", playerName);
         variables.put("auth_uuid", profileId.replace("-", ""));
         variables.put("auth_access_token", String.valueOf(account.getOrDefault("accessToken", profileId)));
-        variables.put("clientid", "");
-        variables.put("auth_xuid", "");
-        variables.put("user_type", String.valueOf(account.getOrDefault("type", "offline")));
+        variables.put("clientid", String.valueOf(account.getOrDefault("clientId", "")));
+        variables.put("auth_xuid", String.valueOf(account.getOrDefault("xuid", "")));
+        String accountType = String.valueOf(account.getOrDefault("type", "offline"));
+        variables.put("user_type", "microsoft".equalsIgnoreCase(accountType) ? "msa" : accountType);
         variables.put("version_type", String.valueOf(version.getOrDefault("type", "release")));
         variables.put("resolution_width", "1280");
         variables.put("resolution_height", "720");

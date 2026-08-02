@@ -1,14 +1,18 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
+  AlertCircle,
   Bell,
   CheckCircle2,
+  Copy,
   Download,
+  ExternalLink,
   FolderOpen,
   Gauge,
   Globe2,
   HardDriveDownload,
   Home,
+  KeyRound,
   LibraryBig,
   PackageOpen,
   Play,
@@ -16,6 +20,7 @@ import {
   RefreshCw,
   Search,
   Settings,
+  ShieldCheck,
   SlidersHorizontal,
   TerminalSquare,
   UserRound,
@@ -23,19 +28,34 @@ import {
 import { useI18n } from "@/i18n";
 import type { Locale } from "@/i18n";
 import { launcherClient } from "@/services/launcherClient";
-import type { LaunchJobEvent, LauncherLibrary, LauncherSettings, Modpack } from "@/types/launcher";
+import type {
+  LaunchJobEvent,
+  LauncherAccount,
+  LauncherLibrary,
+  LauncherSettings,
+  MicrosoftLoginPollResult,
+  MicrosoftLoginStart,
+  Modpack,
+} from "@/types/launcher";
 
 const activeView = ref<"home" | "library" | "instances" | "settings">("home");
 const library = ref<LauncherLibrary | null>(null);
 const selectedPackId = ref("");
 const settings = ref<LauncherSettings | null>(null);
+const accounts = ref<LauncherAccount[]>([]);
 const jobs = ref<LaunchJobEvent[]>([]);
 const searchQuery = ref("");
 const busyPackId = ref<string | null>(null);
 const newInstanceName = ref("Minecraft 1.20.1");
 const newMinecraftVersion = ref("1.20.1");
 const isCreatingInstance = ref(false);
+const microsoftLogin = ref<MicrosoftLoginStart | null>(null);
+const microsoftLoginStatus = ref<MicrosoftLoginPollResult | null>(null);
+const microsoftLoginError = ref("");
+const isStartingMicrosoftLogin = ref(false);
+const isPollingMicrosoftLogin = ref(false);
 const { locale, localeOptions, t, localizePack, localizeNews, translateJobMessage } = useI18n();
+let microsoftPollTimer: ReturnType<typeof setTimeout> | null = null;
 
 const navItems = [
   { id: "home", labelKey: "nav.home", icon: Home },
@@ -67,6 +87,50 @@ const activeJob = computed(() => jobs.value.find((job) => job.status === "runnin
 const hasPacks = computed(() => localizedPacks.value.length > 0);
 const activeLocaleOption = computed(() => localeOptions.value.find((option) => option.value === locale.value) ?? localeOptions.value[0]);
 const createInstanceDisabled = computed(() => isCreatingInstance.value || !newMinecraftVersion.value.trim());
+const activeAccount = computed(() => {
+  if (!settings.value) {
+    return null;
+  }
+
+  return (
+    accounts.value.find((account) => account.id === settings.value?.selectedAccountId) ??
+    accounts.value.find((account) => account.id === settings.value?.profileId) ??
+    null
+  );
+});
+const activePlayerName = computed(() => activeAccount.value?.username ?? settings.value?.playerName ?? "LocalPlayer");
+const accountProfileLabel = computed(() =>
+  settings.value?.accountType === "microsoft" ? t("account.microsoftProfile") : t("account.offlineProfile"),
+);
+const microsoftLoginMessage = computed(() => {
+  if (microsoftLoginError.value) {
+    return microsoftLoginError.value;
+  }
+
+  if (microsoftLoginStatus.value?.status === "complete") {
+    return t("microsoft.statusComplete");
+  }
+
+  if (microsoftLoginStatus.value?.status === "slow_down") {
+    return t("microsoft.statusSlowDown");
+  }
+
+  if (microsoftLoginStatus.value?.status === "failed") {
+    return microsoftLoginStatus.value.errorMessage ?? microsoftLoginStatus.value.message ?? t("microsoft.statusFailed");
+  }
+
+  if (microsoftLogin.value) {
+    return t("microsoft.statusWaiting");
+  }
+
+  return t("microsoft.statusReady");
+});
+const microsoftStatusKind = computed(() => {
+  if (microsoftLoginError.value || microsoftLoginStatus.value?.status === "failed") {
+    return "failed";
+  }
+  return microsoftLoginStatus.value?.status ?? "ready";
+});
 
 const javaDisplayValue = computed(() => {
   if (!settings.value) {
@@ -89,19 +153,25 @@ const filteredPacks = computed(() => {
 });
 
 onMounted(async () => {
-  const [libraryPayload, settingsPayload] = await Promise.all([
+  const [libraryPayload, settingsPayload, accountsPayload] = await Promise.all([
     launcherClient.getLibrary(),
     launcherClient.getSettings(),
+    launcherClient.listAccounts(),
   ]);
 
   library.value = libraryPayload;
   selectedPackId.value = libraryPayload.featuredPackId || libraryPayload.packs[0]?.id || "";
   settings.value = settingsPayload;
+  accounts.value = accountsPayload;
 
   launcherClient.onJobEvent((event) => {
     jobs.value = [event, ...jobs.value.filter((job) => job.jobId !== event.jobId)].slice(0, 8);
     patchPackAfterJob(event);
   });
+});
+
+onBeforeUnmount(() => {
+  clearMicrosoftPollTimer();
 });
 
 async function installPack(pack: Modpack) {
@@ -156,6 +226,91 @@ async function createVanillaInstance() {
     activeView.value = "library";
   } finally {
     isCreatingInstance.value = false;
+  }
+}
+
+async function startMicrosoftLogin() {
+  clearMicrosoftPollTimer();
+  microsoftLogin.value = null;
+  microsoftLoginStatus.value = null;
+  microsoftLoginError.value = "";
+  isStartingMicrosoftLogin.value = true;
+
+  try {
+    microsoftLogin.value = await launcherClient.startMicrosoftLogin();
+    microsoftLoginStatus.value = { status: "pending", message: t("microsoft.statusWaiting") };
+    scheduleMicrosoftPoll(microsoftLogin.value.interval);
+  } catch (error) {
+    microsoftLoginError.value = errorMessage(error);
+  } finally {
+    isStartingMicrosoftLogin.value = false;
+  }
+}
+
+async function pollMicrosoftLogin(auto = false) {
+  if (!microsoftLogin.value || isPollingMicrosoftLogin.value) {
+    return;
+  }
+
+  if (!auto) {
+    clearMicrosoftPollTimer();
+  }
+
+  isPollingMicrosoftLogin.value = true;
+  microsoftLoginError.value = "";
+  try {
+    const result = await launcherClient.pollMicrosoftLogin(microsoftLogin.value.deviceCode);
+    microsoftLoginStatus.value = result;
+
+    if (result.status === "complete") {
+      clearMicrosoftPollTimer();
+      const [settingsPayload, accountsPayload] = await Promise.all([
+        launcherClient.getSettings(),
+        launcherClient.listAccounts(),
+      ]);
+      settings.value = settingsPayload;
+      accounts.value = accountsPayload;
+      return;
+    }
+
+    if (result.status === "pending" || result.status === "slow_down") {
+      const interval = Math.max(1, microsoftLogin.value.interval + (result.intervalDelta ?? 0));
+      scheduleMicrosoftPoll(interval);
+      return;
+    }
+
+    clearMicrosoftPollTimer();
+  } catch (error) {
+    microsoftLoginError.value = errorMessage(error);
+    clearMicrosoftPollTimer();
+  } finally {
+    isPollingMicrosoftLogin.value = false;
+  }
+}
+
+async function openMicrosoftVerification() {
+  if (microsoftLogin.value?.verificationUri) {
+    await launcherClient.openExternal(microsoftLogin.value.verificationUri);
+  }
+}
+
+async function copyMicrosoftCode() {
+  if (microsoftLogin.value?.userCode && navigator.clipboard) {
+    await navigator.clipboard.writeText(microsoftLogin.value.userCode);
+  }
+}
+
+function scheduleMicrosoftPoll(seconds: number) {
+  clearMicrosoftPollTimer();
+  microsoftPollTimer = setTimeout(() => {
+    void pollMicrosoftLogin(true);
+  }, Math.max(1, seconds) * 1000);
+}
+
+function clearMicrosoftPollTimer() {
+  if (microsoftPollTimer) {
+    clearTimeout(microsoftPollTimer);
+    microsoftPollTimer = null;
   }
 }
 
@@ -219,6 +374,10 @@ function setLocale(value: Locale) {
 function jobMessage(job: LaunchJobEvent) {
   return translateJobMessage(job.messageKey, job.message);
 }
+
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
 </script>
 
 <template>
@@ -249,8 +408,8 @@ function jobMessage(job: LaunchJobEvent) {
       <section class="account-strip">
         <UserRound :size="18" />
         <div>
-          <strong>{{ t("account.player") }}</strong>
-          <span>{{ t("account.profile") }}</span>
+          <strong>{{ activePlayerName }}</strong>
+          <span>{{ accountProfileLabel }}</span>
         </div>
       </section>
     </aside>
@@ -606,6 +765,57 @@ function jobMessage(job: LaunchJobEvent) {
                 <option value="microsoft">{{ t("settings.microsoftAccount") }}</option>
               </select>
             </label>
+            <div class="microsoft-login-panel">
+              <div class="microsoft-login-heading">
+                <span class="microsoft-badge">
+                  <ShieldCheck :size="20" />
+                </span>
+                <div>
+                  <strong>{{ t("microsoft.title") }}</strong>
+                  <p>{{ t("microsoft.body") }}</p>
+                </div>
+              </div>
+
+              <label class="microsoft-client-row">
+                <span>{{ t("settings.microsoftClientId") }}</span>
+                <input
+                  :value="settings.microsoftClientId"
+                  :placeholder="t('microsoft.clientIdPlaceholder')"
+                  autocomplete="off"
+                  @change="saveSetting('microsoftClientId', ($event.target as HTMLInputElement).value)"
+                />
+              </label>
+
+              <div class="microsoft-action-row">
+                <button class="primary-button" type="button" :disabled="isStartingMicrosoftLogin" @click="startMicrosoftLogin">
+                  <KeyRound :size="18" />
+                  <span>{{ isStartingMicrosoftLogin ? t("action.processing") : t("microsoft.start") }}</span>
+                </button>
+                <button class="ghost-button" type="button" :disabled="!microsoftLogin || isPollingMicrosoftLogin" @click="pollMicrosoftLogin(false)">
+                  <RefreshCw :size="17" />
+                  <span>{{ isPollingMicrosoftLogin ? t("action.processing") : t("microsoft.check") }}</span>
+                </button>
+              </div>
+
+              <div v-if="microsoftLogin" class="device-code-panel">
+                <span>{{ t("microsoft.userCode") }}</span>
+                <strong>{{ microsoftLogin.userCode }}</strong>
+                <button class="icon-button bordered" type="button" :title="t('microsoft.copyCode')" @click="copyMicrosoftCode">
+                  <Copy :size="18" />
+                </button>
+                <button class="ghost-button" type="button" @click="openMicrosoftVerification">
+                  <ExternalLink :size="17" />
+                  <span>{{ t("microsoft.openPage") }}</span>
+                </button>
+              </div>
+
+              <div class="auth-status" :class="microsoftStatusKind">
+                <CheckCircle2 v-if="microsoftStatusKind === 'complete'" :size="18" />
+                <AlertCircle v-else-if="microsoftStatusKind === 'failed'" :size="18" />
+                <KeyRound v-else :size="18" />
+                <span>{{ microsoftLoginMessage }}</span>
+              </div>
+            </div>
             <label class="toggle-row">
               <span>{{ t("settings.closeAfterLaunch") }}</span>
               <input

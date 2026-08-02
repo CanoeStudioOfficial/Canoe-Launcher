@@ -8,6 +8,8 @@ import type {
   LauncherLibrary,
   LauncherSettings,
   LauncherAccount,
+  MicrosoftLoginPollResult,
+  MicrosoftLoginStart,
   GameProcess,
   Modpack,
   ModpackStatus,
@@ -32,6 +34,8 @@ export class CanoeLauncherBridge {
     playerName: "LocalPlayer",
     accountType: "offline",
     profileId: "b50ad385-829d-3141-a216-7e7d7539ba7f",
+    selectedAccountId: "b50ad385-829d-3141-a216-7e7d7539ba7f",
+    microsoftClientId: "",
   };
 
   bindWindow(window: BrowserWindow) {
@@ -86,6 +90,7 @@ export class CanoeLauncherBridge {
         ...this.settings,
         accountType: "offline",
         playerName: username,
+        selectedAccountId: this.settings.profileId,
       };
       return {
         id: this.settings.profileId,
@@ -93,6 +98,14 @@ export class CanoeLauncherBridge {
         username,
       };
     });
+  }
+
+  async startMicrosoftLogin(): Promise<MicrosoftLoginStart> {
+    return this.core.request<MicrosoftLoginStart>("startMicrosoftLogin", {}, 120_000);
+  }
+
+  async pollMicrosoftLogin(deviceCode: string): Promise<MicrosoftLoginPollResult> {
+    return this.core.request<MicrosoftLoginPollResult>("pollMicrosoftLogin", { deviceCode }, 120_000);
   }
 
   async createVanillaInstance(input: CreateVanillaInstanceInput): Promise<Modpack> {

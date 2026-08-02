@@ -28,6 +28,8 @@ Canoe Launcher talks to the Java launcher core through newline-delimited JSON ov
 - `updateSettings`
 - `listAccounts`
 - `addOfflineAccount`
+- `startMicrosoftLogin`
+- `pollMicrosoftLogin`
 - `createVanillaInstance`
 - `installPack`
 - `updatePack`
@@ -48,7 +50,10 @@ The current self-developed core owns:
 - Fabric loader profile download
 - library, native, asset, and client jar verification
 - offline account persistence
+- Microsoft device-code sign-in, Xbox/XSTS exchange, Minecraft profile lookup, and token refresh
 - launch-argument generation
 - game process start/list/stop registration
 
-The next extension targets are Forge, NeoForge, Microsoft auth, and signed Canoe modpack manifests.
+Microsoft sign-in requires a public OAuth client ID configured as `microsoftClientId` in launcher settings or `CANOE_MICROSOFT_CLIENT_ID` in the Java core environment.
+
+The next extension targets are Forge, NeoForge, deeper account lifecycle controls, and signed Canoe modpack manifests.

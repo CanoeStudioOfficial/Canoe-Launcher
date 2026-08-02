@@ -44,6 +44,8 @@ export interface LauncherSettings {
   playerName: string;
   accountType: "offline" | "microsoft";
   profileId: string;
+  selectedAccountId: string;
+  microsoftClientId: string;
 }
 
 export interface CreateVanillaInstanceInput {
@@ -56,6 +58,29 @@ export interface LauncherAccount {
   type: "offline" | "microsoft";
   username: string;
   createdAt?: string;
+  expiresAt?: string;
+  xuid?: string;
+}
+
+export type MicrosoftLoginStatus = "pending" | "slow_down" | "complete" | "failed";
+
+export interface MicrosoftLoginStart {
+  deviceCode: string;
+  userCode: string;
+  verificationUri: string;
+  expiresIn: number;
+  interval: number;
+  message?: string;
+  expiresAt: string;
+}
+
+export interface MicrosoftLoginPollResult {
+  status: MicrosoftLoginStatus;
+  account?: LauncherAccount;
+  message?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  intervalDelta?: number;
 }
 
 export interface GameProcess {

@@ -19,6 +19,52 @@ public final class AccountStore {
     }
 
     public List<Map<String, Object>> listAccounts() throws IOException {
+        return readAccounts().stream().map(this::publicAccount).toList();
+    }
+
+    public Map<String, Object> addOfflineAccount(String username) throws IOException {
+        Map<String, Object> account = offlineAccount(username);
+        List<Map<String, Object>> accounts = new ArrayList<>(readAccounts());
+        accounts.removeIf(item -> String.valueOf(item.get("id")).equals(account.get("id")));
+        accounts.add(account);
+        save(accounts);
+        return publicAccount(account);
+    }
+
+    public Map<String, Object> addMicrosoftAccount(Map<String, Object> account) throws IOException {
+        Map<String, Object> normalized = new LinkedHashMap<>(account);
+        normalized.put("type", "microsoft");
+        normalized.putIfAbsent("createdAt", Instant.now().toString());
+
+        if (isBlank(normalized.get("id")) || isBlank(normalized.get("username"))) {
+            throw new IllegalArgumentException("Microsoft account profile is incomplete.");
+        }
+
+        List<Map<String, Object>> accounts = new ArrayList<>(readAccounts());
+        accounts.removeIf(item -> String.valueOf(item.get("id")).equals(normalized.get("id")));
+        accounts.add(normalized);
+        save(accounts);
+        return publicAccount(normalized);
+    }
+
+    public Map<String, Object> accountFromSettings(Map<String, Object> settings) throws IOException {
+        String selectedId = String.valueOf(settings.getOrDefault("selectedAccountId", settings.getOrDefault("profileId", "")));
+        String accountType = String.valueOf(settings.getOrDefault("accountType", "offline"));
+        for (Map<String, Object> account : readAccounts()) {
+            if (!selectedId.isBlank() && selectedId.equals(String.valueOf(account.get("id")))) {
+                return account;
+            }
+        }
+
+        if ("microsoft".equals(accountType)) {
+            throw new IOException("Selected Microsoft account is not available. Please sign in again.");
+        }
+
+        String name = String.valueOf(settings.getOrDefault("playerName", "LocalPlayer"));
+        return offlineAccount(name);
+    }
+
+    private List<Map<String, Object>> readAccounts() throws IOException {
         if (!Files.exists(accountsFile)) {
             Map<String, Object> account = offlineAccount("LocalPlayer");
             save(List.of(account));
@@ -41,27 +87,6 @@ public final class AccountStore {
         return accounts;
     }
 
-    public Map<String, Object> addOfflineAccount(String username) throws IOException {
-        Map<String, Object> account = offlineAccount(username);
-        List<Map<String, Object>> accounts = new ArrayList<>(listAccounts());
-        accounts.removeIf(item -> String.valueOf(item.get("id")).equals(account.get("id")));
-        accounts.add(account);
-        save(accounts);
-        return account;
-    }
-
-    public Map<String, Object> accountFromSettings(Map<String, Object> settings) {
-        String name = String.valueOf(settings.getOrDefault("playerName", "LocalPlayer"));
-        String id = String.valueOf(settings.getOrDefault("profileId", offlineUuid(name)));
-        Map<String, Object> account = new LinkedHashMap<>();
-        account.put("id", id);
-        account.put("type", settings.getOrDefault("accountType", "offline"));
-        account.put("username", name);
-        account.put("accessToken", id);
-        account.put("createdAt", Instant.now().toString());
-        return account;
-    }
-
     private Map<String, Object> offlineAccount(String username) {
         String normalized = username == null || username.isBlank() ? "LocalPlayer" : username.trim();
         Map<String, Object> account = new LinkedHashMap<>();
@@ -76,6 +101,21 @@ public final class AccountStore {
     private void save(List<Map<String, Object>> accounts) throws IOException {
         Files.createDirectories(accountsFile.getParent());
         Files.writeString(accountsFile, Json.stringify(accounts), StandardCharsets.UTF_8);
+    }
+
+    private Map<String, Object> publicAccount(Map<String, Object> account) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", account.get("id"));
+        result.put("type", account.get("type"));
+        result.put("username", account.get("username"));
+        result.put("createdAt", account.get("createdAt"));
+        result.put("expiresAt", account.get("expiresAt"));
+        result.put("xuid", account.get("xuid"));
+        return result;
+    }
+
+    private boolean isBlank(Object value) {
+        return value == null || String.valueOf(value).isBlank();
     }
 
     private String offlineUuid(String username) {

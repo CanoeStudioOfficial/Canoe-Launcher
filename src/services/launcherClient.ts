@@ -1,4 +1,14 @@
-import type { CreateVanillaInstanceInput, GameProcess, LaunchJobEvent, LauncherAccount, LauncherLibrary, LauncherSettings, Modpack } from "@/types/launcher";
+import type {
+  CreateVanillaInstanceInput,
+  GameProcess,
+  LaunchJobEvent,
+  LauncherAccount,
+  LauncherLibrary,
+  LauncherSettings,
+  MicrosoftLoginPollResult,
+  MicrosoftLoginStart,
+  Modpack,
+} from "@/types/launcher";
 
 const mockLibrary: LauncherLibrary = {
   featuredPackId: "",
@@ -23,6 +33,8 @@ const mockSettings: LauncherSettings = {
   playerName: "LocalPlayer",
   accountType: "offline",
   profileId: "b50ad385-829d-3141-a216-7e7d7539ba7f",
+  selectedAccountId: "b50ad385-829d-3141-a216-7e7d7539ba7f",
+  microsoftClientId: "",
 };
 
 export const launcherClient = {
@@ -60,11 +72,28 @@ export const launcherClient = {
 
     mockSettings.playerName = username;
     mockSettings.accountType = "offline";
+    mockSettings.selectedAccountId = mockSettings.profileId;
     return {
       id: mockSettings.profileId,
       type: "offline",
       username,
     };
+  },
+
+  async startMicrosoftLogin(): Promise<MicrosoftLoginStart> {
+    if (window.canoeLauncher) {
+      return window.canoeLauncher.startMicrosoftLogin();
+    }
+
+    throw new Error("Microsoft login requires the desktop app and Canoe Java Core.");
+  },
+
+  async pollMicrosoftLogin(deviceCode: string): Promise<MicrosoftLoginPollResult> {
+    if (window.canoeLauncher) {
+      return window.canoeLauncher.pollMicrosoftLogin(deviceCode);
+    }
+
+    throw new Error(`Microsoft login polling requires Canoe Java Core: ${deviceCode.slice(0, 8)}...`);
   },
 
   async createVanillaInstance(input: CreateVanillaInstanceInput): Promise<Modpack> {
@@ -106,6 +135,15 @@ export const launcherClient = {
 
   async openInstanceFolder(packId: string): Promise<{ ok: boolean; path: string }> {
     return window.canoeLauncher?.openInstanceFolder(packId) ?? { ok: true, path: packId };
+  },
+
+  async openExternal(url: string): Promise<void> {
+    if (window.canoeLauncher) {
+      await window.canoeLauncher.openExternal(url);
+      return;
+    }
+
+    window.open(url, "_blank", "noopener,noreferrer");
   },
 
   onJobEvent(callback: (event: LaunchJobEvent) => void) {

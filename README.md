@@ -36,9 +36,12 @@ This first version is a product-quality shell with a Canoe Java core:
 - Installed instances page
 - Install, update, and launch progress events
 - Settings for Java, memory, downloads, mirrors, and launch behavior
+- Microsoft device-code sign-in through Canoe Java Core
 - English, Simplified Chinese, and Traditional Chinese localization
 - A documented Java subprocess protocol
 
-The launcher now includes a Gradle-managed Java subprocess core under `launcher-core`. The current Java core owns the stdin/stdout protocol, settings storage, instance metadata, Mojang/Fabric metadata downloads, offline accounts, launch-argument generation, and game process registration.
+The launcher now includes a Gradle-managed Java subprocess core under `launcher-core`. The current Java core owns the stdin/stdout protocol, settings storage, instance metadata, Mojang/Fabric metadata downloads, offline/Microsoft accounts, launch-argument generation, and game process registration.
 
-The next implementation step is expanding Canoe Core's own Forge, NeoForge, and signed Canoe modpack manifest installers.
+Microsoft sign-in uses the OAuth device-code flow. Configure a public client ID in the settings page or set `CANOE_MICROSOFT_CLIENT_ID` before starting the Java core.
+
+The next implementation step is expanding Canoe Core's own Forge, NeoForge, account lifecycle controls, and signed Canoe modpack manifest installers.
