@@ -4,6 +4,7 @@ import os from "node:os";
 import { JavaCoreClient } from "./javaCoreClient";
 import type {
   LaunchJobEvent,
+  CreateVanillaInstanceInput,
   LauncherLibrary,
   LauncherSettings,
   LauncherAccount,
@@ -45,13 +46,13 @@ export class CanoeLauncherBridge {
         {
           id: "core-roadmap",
           title: "Canoe Java Core is active",
-          body: "The launcher core is running. Add a real pack catalog before publishing install and launch entries.",
+          body: "The launcher core is running. Local Vanilla instances can be created before remote modpacks are connected.",
           date: "2026-08-01",
         },
         {
           id: "pack-policy",
-          title: "Pack catalog is intentionally empty",
-          body: "No built-in modpacks are bundled until real releases exist.",
+          title: "Local Vanilla instances are available",
+          body: "Use the local catalog for Vanilla instances now, then connect real modpack manifests later.",
           date: "2026-08-01",
         },
       ],
@@ -91,6 +92,16 @@ export class CanoeLauncherBridge {
         type: "offline",
         username,
       };
+    });
+  }
+
+  async createVanillaInstance(input: CreateVanillaInstanceInput): Promise<Modpack> {
+    return this.withCore("createVanillaInstance", { ...input }, () => {
+      const minecraftVersion = input.minecraftVersion?.trim() || "1.20.1";
+      const name = input.name?.trim() || `Minecraft ${minecraftVersion}`;
+      const pack = makeVanillaPack(name, minecraftVersion, this.packs);
+      this.packs = [...this.packs, pack];
+      return pack;
     });
   }
 
@@ -242,4 +253,38 @@ function delay(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
   });
+}
+
+function makeVanillaPack(name: string, minecraftVersion: string, existing: Modpack[]): Modpack {
+  const idRoot = slug(`${name}-${minecraftVersion}`) || "minecraft-instance";
+  let id = idRoot;
+  let suffix = 2;
+  while (existing.some((pack) => pack.id === id)) {
+    id = `${idRoot}-${suffix}`;
+    suffix += 1;
+  }
+
+  return {
+    id,
+    name,
+    studio: "Local",
+    summary: "A locally created Vanilla Minecraft instance.",
+    description: "Created by Canoe Launcher. Canoe Core can install Minecraft metadata, client, libraries, assets, and launch arguments for this instance.",
+    version: minecraftVersion,
+    latestVersion: minecraftVersion,
+    minecraftVersion,
+    loader: "Vanilla",
+    loaderVersion: "",
+    recommendedMemoryMb: 4096,
+    sizeGb: 0,
+    status: "remote",
+    tags: ["Local", "Vanilla", minecraftVersion],
+    cover: "/assets/canoe-mark.svg",
+    accent: "#2f7a5f",
+    changelog: ["Local Vanilla instance created", "Ready for runtime installation"],
+  };
+}
+
+function slug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }

@@ -56,6 +56,7 @@ ipcMain.handle("launcher:list-accounts", () => launcher.listAccounts());
 ipcMain.handle("launcher:list-processes", () => launcher.listProcesses());
 ipcMain.handle("launcher:update-settings", (_event, patch) => launcher.updateSettings(patch));
 ipcMain.handle("launcher:add-offline-account", (_event, username: string) => launcher.addOfflineAccount(username));
+ipcMain.handle("launcher:create-vanilla-instance", (_event, input) => launcher.createVanillaInstance(input));
 ipcMain.handle("launcher:install-pack", (_event, packId: string) => launcher.installPack(packId));
 ipcMain.handle("launcher:update-pack", (_event, packId: string) => launcher.updatePack(packId));
 ipcMain.handle("launcher:launch-instance", (_event, packId: string) => launcher.launchInstance(packId));

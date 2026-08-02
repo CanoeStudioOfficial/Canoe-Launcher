@@ -1,4 +1,4 @@
-import type { GameProcess, LaunchJobEvent, LauncherAccount, LauncherLibrary, LauncherSettings } from "@/types/launcher";
+import type { CreateVanillaInstanceInput, GameProcess, LaunchJobEvent, LauncherAccount, LauncherLibrary, LauncherSettings, Modpack } from "@/types/launcher";
 
 const mockLibrary: LauncherLibrary = {
   featuredPackId: "",
@@ -7,7 +7,7 @@ const mockLibrary: LauncherLibrary = {
     {
       id: "browser-mode",
       title: "Browser preview mode",
-      body: "This preview is running without Electron IPC.",
+      body: "This preview is running without Electron IPC, but local Vanilla instance creation is still simulated.",
       date: "2026-08-01",
     },
   ],
@@ -67,6 +67,19 @@ export const launcherClient = {
     };
   },
 
+  async createVanillaInstance(input: CreateVanillaInstanceInput): Promise<Modpack> {
+    if (window.canoeLauncher) {
+      return window.canoeLauncher.createVanillaInstance(input);
+    }
+
+    const minecraftVersion = input.minecraftVersion.trim() || "1.20.1";
+    const name = input.name.trim() || `Minecraft ${minecraftVersion}`;
+    const pack = makeVanillaPack(name, minecraftVersion, mockLibrary.packs);
+    mockLibrary.packs.push(pack);
+    mockLibrary.featuredPackId ||= pack.id;
+    return pack;
+  },
+
   async listProcesses(): Promise<GameProcess[]> {
     return window.canoeLauncher?.listProcesses() ?? [];
   },
@@ -119,4 +132,38 @@ async function runOrMock(
     messageKey: "job.preview.complete",
     timestamp: new Date().toISOString(),
   };
+}
+
+function makeVanillaPack(name: string, minecraftVersion: string, existing: Modpack[]): Modpack {
+  const idRoot = slug(`${name}-${minecraftVersion}`) || "minecraft-instance";
+  let id = idRoot;
+  let suffix = 2;
+  while (existing.some((pack) => pack.id === id)) {
+    id = `${idRoot}-${suffix}`;
+    suffix += 1;
+  }
+
+  return {
+    id,
+    name,
+    studio: "Local",
+    summary: "A locally created Vanilla Minecraft instance.",
+    description: "Created by Canoe Launcher. Canoe Core can install Minecraft metadata, client, libraries, assets, and launch arguments for this instance.",
+    version: minecraftVersion,
+    latestVersion: minecraftVersion,
+    minecraftVersion,
+    loader: "Vanilla",
+    loaderVersion: "",
+    recommendedMemoryMb: 4096,
+    sizeGb: 0,
+    status: "remote",
+    tags: ["Local", "Vanilla", minecraftVersion],
+    cover: "/assets/canoe-mark.svg",
+    accent: "#2f7a5f",
+    changelog: ["Local Vanilla instance created", "Ready for runtime installation"],
+  };
+}
+
+function slug(value: string) {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }

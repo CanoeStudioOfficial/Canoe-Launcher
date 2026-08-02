@@ -1,4 +1,4 @@
-export type ModLoader = "Forge" | "Fabric" | "NeoForge" | "Quilt";
+export type ModLoader = "Vanilla" | "Forge" | "Fabric" | "NeoForge" | "Quilt";
 export type ModpackStatus = "remote" | "installed" | "updateAvailable" | "running";
 
 export interface Modpack {
@@ -44,6 +44,11 @@ export interface LauncherSettings {
   playerName: string;
   accountType: "offline" | "microsoft";
   profileId: string;
+}
+
+export interface CreateVanillaInstanceInput {
+  name: string;
+  minecraftVersion: string;
 }
 
 export interface LauncherAccount {

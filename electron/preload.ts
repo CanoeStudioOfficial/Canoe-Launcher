@@ -1,5 +1,5 @@
 import { contextBridge, ipcRenderer } from "electron";
-import type { LaunchJobEvent, LauncherSettings } from "../src/types/launcher";
+import type { CreateVanillaInstanceInput, LaunchJobEvent, LauncherSettings } from "../src/types/launcher";
 
 const api = {
   getLibrary: () => ipcRenderer.invoke("launcher:get-library"),
@@ -8,6 +8,7 @@ const api = {
   listProcesses: () => ipcRenderer.invoke("launcher:list-processes"),
   updateSettings: (patch: Partial<LauncherSettings>) => ipcRenderer.invoke("launcher:update-settings", patch),
   addOfflineAccount: (username: string) => ipcRenderer.invoke("launcher:add-offline-account", username),
+  createVanillaInstance: (input: CreateVanillaInstanceInput) => ipcRenderer.invoke("launcher:create-vanilla-instance", input),
   installPack: (packId: string) => ipcRenderer.invoke("launcher:install-pack", packId),
   updatePack: (packId: string) => ipcRenderer.invoke("launcher:update-pack", packId),
   launchInstance: (packId: string) => ipcRenderer.invoke("launcher:launch-instance", packId),

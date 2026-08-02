@@ -15,6 +15,7 @@ public final class CoreService {
     private final Path settingsFile = stateRoot.resolve("settings.json");
     private final CanoeCoreFacade core;
     private final AccountStore accountStore = new AccountStore(stateRoot);
+    private final CatalogStore catalogStore = new CatalogStore(stateRoot);
     private CoreEventEmitter emitter = (event, payload) -> {
     };
     private Map<String, Object> settings;
@@ -38,6 +39,7 @@ public final class CoreService {
             case "listProcesses" -> core.listProcesses();
             case "updateSettings" -> updateSettings(payload);
             case "addOfflineAccount" -> addOfflineAccount(payload);
+            case "createVanillaInstance" -> createVanillaInstance(payload);
             case "installPack" -> installPack(requiredString(payload, "packId"));
             case "updatePack" -> updatePack(requiredString(payload, "packId"));
             case "launchInstance" -> launchInstance(requiredString(payload, "packId"));
@@ -87,6 +89,10 @@ public final class CoreService {
         settings.put("accountType", "offline");
         saveSettings();
         return account;
+    }
+
+    private Map<String, Object> createVanillaInstance(Map<String, Object> payload) throws IOException {
+        return catalogStore.createVanillaInstance(payload, core);
     }
 
     private Map<String, Object> installPack(String packId) throws Exception {
@@ -159,8 +165,8 @@ public final class CoreService {
         return payload;
     }
 
-    private List<Map<String, Object>> packs() {
-        return List.of();
+    private List<Map<String, Object>> packs() throws IOException {
+        return catalogStore.listPacks(core);
     }
 
     private List<Map<String, Object>> news() {
@@ -172,8 +178,8 @@ public final class CoreService {
 
         Map<String, Object> runtime = new LinkedHashMap<>();
         runtime.put("id", "pack-policy");
-        runtime.put("title", "Pack catalog is intentionally empty");
-        runtime.put("body", "No built-in modpacks are bundled until real releases exist.");
+        runtime.put("title", "Local Vanilla instances are available");
+        runtime.put("body", "Create a local Minecraft instance, then install and launch it through Canoe Core.");
         runtime.put("date", "2026-08-02");
 
         return List.of(core, runtime);

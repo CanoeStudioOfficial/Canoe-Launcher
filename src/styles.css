@@ -259,16 +259,25 @@ button {
   place-items: center;
   width: 42px;
   height: 42px;
+  border: 1px solid transparent;
   border-radius: 8px;
   background: #ffffff;
   color: #25312c;
   box-shadow: 0 1px 0 rgba(18, 24, 21, 0.08);
   cursor: pointer;
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
 }
 
 .icon-button.bordered {
   border: 1px solid #d8dfd6;
   box-shadow: none;
+}
+
+.icon-button:hover {
+  transform: translateY(-1px);
+  border-color: #b8cdbc;
+  background: #f9fbf8;
+  box-shadow: 0 10px 22px rgba(38, 74, 52, 0.1);
 }
 
 .icon-button:disabled,
@@ -323,6 +332,52 @@ button {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   color: #1f6f55;
+}
+
+.quick-create-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 150px auto;
+  align-items: end;
+  gap: 10px;
+  width: min(720px, 100%);
+  padding: 12px;
+  border: 1px solid #d8e3d7;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.quick-create-panel.compact {
+  margin-top: 6px;
+}
+
+.quick-create-panel label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: #4f5d55;
+  font-size: 12px;
+  font-weight: 800;
+  text-align: left;
+}
+
+.quick-create-panel input {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  border: 1px solid #cbd8ca;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #17201c;
+  padding: 0 11px;
+  font: inherit;
+  font-weight: 700;
+  transition: border-color 140ms ease, box-shadow 140ms ease;
+}
+
+.quick-create-panel input:focus {
+  border-color: #5f9e76;
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(31, 111, 85, 0.14);
 }
 
 .feature-copy {
@@ -388,16 +443,19 @@ p {
   justify-content: center;
   gap: 8px;
   min-height: 42px;
+  border: 1px solid transparent;
   border-radius: 8px;
   cursor: pointer;
   font-weight: 800;
+  transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease, background 140ms ease;
 }
 
 .primary-button {
   width: fit-content;
   padding: 0 18px;
-  background: #1f6f55;
+  background: linear-gradient(180deg, #238163, #1d694f);
   color: #ffffff;
+  box-shadow: 0 12px 24px rgba(31, 111, 85, 0.2);
 }
 
 .primary-button.small {
@@ -409,6 +467,20 @@ p {
   padding: 0 12px;
   background: #eef4ec;
   color: #25312c;
+  border-color: #d8e3d7;
+}
+
+.primary-button:hover,
+.ghost-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 26px rgba(38, 74, 52, 0.14);
+}
+
+.primary-button:focus-visible,
+.ghost-button:focus-visible,
+.icon-button:focus-visible {
+  outline: 3px solid rgba(31, 111, 85, 0.22);
+  outline-offset: 2px;
 }
 
 .side-panel,

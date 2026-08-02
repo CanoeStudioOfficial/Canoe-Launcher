@@ -28,6 +28,7 @@ Canoe Launcher talks to the Java launcher core through newline-delimited JSON ov
 - `updateSettings`
 - `listAccounts`
 - `addOfflineAccount`
+- `createVanillaInstance`
 - `installPack`
 - `updatePack`
 - `launchInstance`
@@ -41,6 +42,8 @@ Canoe Launcher talks to the Java launcher core through newline-delimited JSON ov
 
 The current self-developed core owns:
 
+- local catalog persistence
+- local Vanilla instance creation
 - Mojang version metadata download
 - Fabric loader profile download
 - library, native, asset, and client jar verification

@@ -12,6 +12,7 @@ import {
   LibraryBig,
   PackageOpen,
   Play,
+  Plus,
   RefreshCw,
   Search,
   Settings,
@@ -31,6 +32,9 @@ const settings = ref<LauncherSettings | null>(null);
 const jobs = ref<LaunchJobEvent[]>([]);
 const searchQuery = ref("");
 const busyPackId = ref<string | null>(null);
+const newInstanceName = ref("Minecraft 1.20.1");
+const newMinecraftVersion = ref("1.20.1");
+const isCreatingInstance = ref(false);
 const { locale, localeOptions, t, localizePack, localizeNews, translateJobMessage } = useI18n();
 
 const navItems = [
@@ -62,6 +66,7 @@ const latestJob = computed(() => jobs.value[0]);
 const activeJob = computed(() => jobs.value.find((job) => job.status === "running"));
 const hasPacks = computed(() => localizedPacks.value.length > 0);
 const activeLocaleOption = computed(() => localeOptions.value.find((option) => option.value === locale.value) ?? localeOptions.value[0]);
+const createInstanceDisabled = computed(() => isCreatingInstance.value || !newMinecraftVersion.value.trim());
 
 const javaDisplayValue = computed(() => {
   if (!settings.value) {
@@ -128,6 +133,30 @@ async function launchPack(pack: Modpack) {
 
 async function openFolder(pack: Modpack) {
   await launcherClient.openInstanceFolder(pack.id);
+}
+
+async function createVanillaInstance() {
+  if (!library.value || createInstanceDisabled.value) {
+    return;
+  }
+
+  isCreatingInstance.value = true;
+  try {
+    const pack = await launcherClient.createVanillaInstance({
+      name: newInstanceName.value,
+      minecraftVersion: newMinecraftVersion.value,
+    });
+
+    library.value = {
+      ...library.value,
+      featuredPackId: library.value.featuredPackId || pack.id,
+      packs: [...library.value.packs.filter((item) => item.id !== pack.id), pack],
+    };
+    selectedPackId.value = pack.id;
+    activeView.value = "library";
+  } finally {
+    isCreatingInstance.value = false;
+  }
 }
 
 function patchPackAfterJob(event: LaunchJobEvent) {
@@ -290,7 +319,20 @@ function jobMessage(job: LaunchJobEvent) {
               <span class="eyebrow">{{ t("empty.catalogEyebrow") }}</span>
               <h1>{{ t("empty.noPacksTitle") }}</h1>
               <p>{{ t("empty.noPacksBody") }}</p>
-              <button class="ghost-button" @click="activeView = 'settings'">{{ t("empty.reviewSettings") }}</button>
+              <form class="quick-create-panel" @submit.prevent="createVanillaInstance">
+                <label>
+                  <span>{{ t("create.instanceName") }}</span>
+                  <input v-model="newInstanceName" type="text" autocomplete="off" />
+                </label>
+                <label>
+                  <span>{{ t("create.minecraftVersion") }}</span>
+                  <input v-model="newMinecraftVersion" type="text" autocomplete="off" />
+                </label>
+                <button class="primary-button" type="submit" :disabled="createInstanceDisabled">
+                  <Plus :size="18" />
+                  <span>{{ isCreatingInstance ? t("action.processing") : t("create.vanilla") }}</span>
+                </button>
+              </form>
             </div>
           </article>
 
@@ -429,6 +471,20 @@ function jobMessage(job: LaunchJobEvent) {
             <PackageOpen :size="44" />
             <strong>{{ t("empty.noPacksTitle") }}</strong>
             <p>{{ t("empty.noPacksBody") }}</p>
+            <form class="quick-create-panel compact" @submit.prevent="createVanillaInstance">
+              <label>
+                <span>{{ t("create.instanceName") }}</span>
+                <input v-model="newInstanceName" type="text" autocomplete="off" />
+              </label>
+              <label>
+                <span>{{ t("create.minecraftVersion") }}</span>
+                <input v-model="newMinecraftVersion" type="text" autocomplete="off" />
+              </label>
+              <button class="primary-button" type="submit" :disabled="createInstanceDisabled">
+                <Plus :size="18" />
+                <span>{{ isCreatingInstance ? t("action.processing") : t("create.vanilla") }}</span>
+              </button>
+            </form>
           </div>
         </section>
 

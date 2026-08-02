@@ -31,7 +31,8 @@ npm.cmd run dev
 
 This first version is a product-quality shell with a Canoe Java core:
 
-- Empty modpack catalog until real releases are connected
+- Empty remote modpack catalog until real releases are connected
+- Local Vanilla instance creation backed by the Java core catalog
 - Installed instances page
 - Install, update, and launch progress events
 - Settings for Java, memory, downloads, mirrors, and launch behavior

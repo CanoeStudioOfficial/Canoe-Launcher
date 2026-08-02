@@ -61,11 +61,14 @@ const messages = {
     "spec.size": "大小",
     "empty.catalogEyebrow": "目录尚未接入",
     "empty.noPacksTitle": "还没有真实整合包",
-    "empty.noPacksBody": "当前不会再展示示例整合包。等你的整合包清单、CDN 或本地导入流程准备好后，再把真实项目接进来。",
+    "empty.noPacksBody": "当前不会再展示示例整合包。你可以先创建一个本地原版实例；等整合包清单、CDN 或导入流程准备好后，再把真实项目接进来。",
     "empty.noCatalogInline": "整合包库为空，没有绑定任何示例项目。",
     "empty.noInstancesTitle": "暂无本地实例",
     "empty.noInstancesBody": "安装真实整合包后，这里会显示可启动的本地实例。",
     "empty.reviewSettings": "查看启动器设置",
+    "create.instanceName": "实例名称",
+    "create.minecraftVersion": "Minecraft 版本",
+    "create.vanilla": "创建原版实例",
     "loading": "正在载入",
     "job.install.readManifest": "读取整合包清单",
     "job.install.checkVersion": "检查 Minecraft 与加载器版本",
@@ -136,11 +139,14 @@ const messages = {
     "spec.size": "大小",
     "empty.catalogEyebrow": "目錄尚未接入",
     "empty.noPacksTitle": "還沒有真實整合包",
-    "empty.noPacksBody": "目前不會再顯示示例整合包。等你的整合包清單、CDN 或本機匯入流程準備好後，再把真實項目接進來。",
+    "empty.noPacksBody": "目前不會再顯示示例整合包。你可以先建立一個本機原版實例；等整合包清單、CDN 或匯入流程準備好後，再把真實項目接進來。",
     "empty.noCatalogInline": "整合包庫為空，沒有綁定任何示例項目。",
     "empty.noInstancesTitle": "暫無本機實例",
     "empty.noInstancesBody": "安裝真實整合包後，這裡會顯示可啟動的本機實例。",
     "empty.reviewSettings": "查看啟動器設定",
+    "create.instanceName": "實例名稱",
+    "create.minecraftVersion": "Minecraft 版本",
+    "create.vanilla": "建立原版實例",
     "loading": "正在載入",
     "job.install.readManifest": "讀取整合包清單",
     "job.install.checkVersion": "檢查 Minecraft 與載入器版本",
@@ -211,11 +217,14 @@ const messages = {
     "spec.size": "Size",
     "empty.catalogEyebrow": "Catalog not connected",
     "empty.noPacksTitle": "No real modpacks yet",
-    "empty.noPacksBody": "Sample packs are no longer shown. When your pack manifest, CDN, or local import flow is ready, real projects can be wired in here.",
+    "empty.noPacksBody": "Sample packs are no longer shown. You can create a local Vanilla instance now; when your pack manifest, CDN, or import flow is ready, real projects can be wired in here.",
     "empty.noCatalogInline": "The modpack catalog is empty and no sample projects are bound.",
     "empty.noInstancesTitle": "No local instances",
     "empty.noInstancesBody": "Installed real modpacks will appear here as launchable instances.",
     "empty.reviewSettings": "Review launcher settings",
+    "create.instanceName": "Instance name",
+    "create.minecraftVersion": "Minecraft version",
+    "create.vanilla": "Create Vanilla instance",
     "loading": "Loading",
     "job.install.readManifest": "Reading modpack manifest",
     "job.install.checkVersion": "Checking Minecraft and loader versions",
@@ -246,6 +255,30 @@ const packCopy: Record<
   en: {},
 };
 
+const localVanillaCopy: Record<Locale, Pick<Modpack, "studio" | "summary" | "description" | "tags" | "changelog">> = {
+  "zh-CN": {
+    studio: "本地",
+    summary: "本地创建的原版 Minecraft 实例。",
+    description: "由 Canoe Launcher 创建。Canoe Core 会为该实例安装 Minecraft 元数据、客户端、依赖库、资源文件并生成启动参数。",
+    tags: ["本地", "原版"],
+    changelog: ["已创建本地原版实例", "可以安装运行时"],
+  },
+  "zh-TW": {
+    studio: "本機",
+    summary: "本機建立的原版 Minecraft 實例。",
+    description: "由 Canoe Launcher 建立。Canoe Core 會為該實例安裝 Minecraft 中繼資料、客戶端、依賴庫、資源檔並產生啟動參數。",
+    tags: ["本機", "原版"],
+    changelog: ["已建立本機原版實例", "可以安裝執行時"],
+  },
+  en: {
+    studio: "Local",
+    summary: "A locally created Vanilla Minecraft instance.",
+    description: "Created by Canoe Launcher. Canoe Core can install Minecraft metadata, client, libraries, assets, and launch arguments for this instance.",
+    tags: ["Local", "Vanilla"],
+    changelog: ["Local Vanilla instance created", "Ready for runtime installation"],
+  },
+};
+
 const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body">>> = {
   "zh-CN": {
     "core-roadmap": {
@@ -253,8 +286,8 @@ const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body
       body: "Electron 已经通过逐行 JSON 协议连接到独立 Java 核心。",
     },
     "pack-policy": {
-      title: "整合包目录保持为空",
-      body: "在你真正开始制作整合包之前，启动器不会内置任何虚构项目。",
+      title: "可以创建本地原版实例",
+      body: "先用本地 catalog 管理 Vanilla 实例，后续再接入真实整合包清单。",
     },
     "browser-mode": {
       title: "浏览器预览模式",
@@ -267,8 +300,8 @@ const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body
       body: "Electron 已經透過逐行 JSON 協議連接到獨立 Java 核心。",
     },
     "pack-policy": {
-      title: "整合包目錄保持為空",
-      body: "在你真正開始製作整合包之前，啟動器不會內建任何虛構項目。",
+      title: "可以建立本機原版實例",
+      body: "先用本機 catalog 管理 Vanilla 實例，後續再接入真實整合包清單。",
     },
     "browser-mode": {
       title: "瀏覽器預覽模式",
@@ -281,8 +314,8 @@ const newsCopy: Record<Locale, Record<string, Pick<LauncherNews, "title" | "body
       body: "Electron talks to the standalone Java core through a line-delimited JSON protocol.",
     },
     "pack-policy": {
-      title: "Pack catalog stays empty",
-      body: "No fictional projects are bundled before real modpacks exist.",
+      title: "Local Vanilla instances are available",
+      body: "Use the local catalog for Vanilla instances now, then connect real modpack manifests later.",
     },
     "browser-mode": {
       title: "Browser preview mode",
@@ -327,7 +360,18 @@ export function t(key: string, params: Record<string, string | number> = {}) {
 
 export function localizePack(pack: Modpack): Modpack {
   const copy = packCopy[currentLocale.value][pack.id] ?? packCopy[fallbackLocale][pack.id];
-  return copy ? { ...pack, ...copy } : pack;
+  if (copy) {
+    return { ...pack, ...copy };
+  }
+  if (pack.studio === "Local" && pack.loader === "Vanilla") {
+    const localCopy = localVanillaCopy[currentLocale.value];
+    return {
+      ...pack,
+      ...localCopy,
+      tags: [...localCopy.tags, pack.minecraftVersion],
+    };
+  }
+  return pack;
 }
 
 export function localizeNews(news: LauncherNews): LauncherNews {
