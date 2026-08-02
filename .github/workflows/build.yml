@@ -1,0 +1,63 @@
+name: build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  package:
+    name: package-${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: windows
+            os: windows-latest
+            script: build:win
+          - name: linux
+            os: ubuntu-latest
+            script: build:linux:full
+          - name: macos-intel
+            os: macos-15-intel
+            script: build:mac:intel
+          - name: macos-apple
+            os: macos-15
+            script: build:mac:apple
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Install Linux packaging tools
+        if: matrix.name == 'linux'
+        run: sudo apt-get update && sudo apt-get install -y fakeroot rpm libarchive-tools
+
+      - run: npm run ${{ matrix.script }}
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canoe-launcher-${{ matrix.name }}
+          path: |
+            release/*.AppImage
+            release/*.blockmap
+            release/*.deb
+            release/*.dmg
+            release/*.exe
+            release/*.pacman
+            release/*.rpm
+            release/*.tar.gz
+            release/*.tar.xz
+            release/*.zip
+          if-no-files-found: error

@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "description": "A cross-platform Minecraft modpack launcher for Canoe Studio packs.",
+  "desktopName": "canoe-launcher",
   "author": {
     "name": "Canoe Studio"
   },
@@ -14,26 +15,35 @@
     "core:run": "node scripts/gradle-core.mjs :launcher-core:run",
     "dev": "npm run core:build && vite --host 127.0.0.1",
     "typecheck": "vue-tsc --noEmit",
-    "build": "npm run core:build && vue-tsc --noEmit && vite build && electron-builder",
+    "app:build": "npm run core:build && vue-tsc --noEmit && vite build",
+    "build": "npm run app:build && electron-builder",
+    "build:win": "npm run app:build && electron-builder --win nsis portable",
+    "build:linux": "npm run app:build && electron-builder --linux tar.gz",
+    "build:linux:full": "npm run app:build && electron-builder --linux AppImage deb rpm pacman tar.gz tar.xz zip",
+    "build:mac": "npm run app:build && electron-builder --mac dmg zip",
+    "build:mac:intel": "npm run app:build && electron-builder --mac dmg zip --x64",
+    "build:mac:apple": "npm run app:build && electron-builder --mac dmg zip --arm64",
+    "build:all": "npm run app:build && electron-builder --win nsis portable --linux AppImage deb rpm pacman tar.gz tar.xz zip --mac dmg zip",
     "preview": "vite preview --host 127.0.0.1"
   },
   "dependencies": {
+    "lucide-vue-next": "^0.468.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.4",
     "electron": "^39.0.0",
     "electron-builder": "^26.0.12",
-    "lucide-vue-next": "^0.468.0",
+    "typescript": "^5.7.2",
     "vite": "^6.0.0",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
-    "vue": "^3.5.13",
     "vue-tsc": "^2.1.10"
-  },
-  "devDependencies": {
-    "typescript": "^5.7.2"
   },
   "build": {
     "appId": "studio.canoe.launcher",
     "productName": "Canoe Launcher",
+    "artifactName": "Canoe-Launcher-${version}-${arch}.${ext}",
     "directories": {
       "output": "release"
     },
@@ -49,13 +59,102 @@
       }
     ],
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "nsis": {
+      "artifactName": "Canoe-Launcher-${version}-windows-installer-${arch}.${ext}",
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false
+    },
+    "portable": {
+      "artifactName": "Canoe-Launcher-${version}-windows-portable-${arch}.${ext}"
     },
     "mac": {
-      "target": "dmg"
+      "category": "public.app-category.games",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "artifactName": "Canoe-Launcher-${version}-macos-${arch}.${ext}"
     },
     "linux": {
-      "target": "AppImage"
+      "category": "Game",
+      "executableName": "canoe-launcher",
+      "synopsis": "Canoe Studio Minecraft modpack launcher",
+      "maintainer": "Canoe Studio",
+      "syncDesktopName": true,
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "rpm",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "pacman",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.gz",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "tar.xz",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "artifactName": "Canoe-Launcher-${version}-linux-${arch}.${ext}"
     }
   }
 }

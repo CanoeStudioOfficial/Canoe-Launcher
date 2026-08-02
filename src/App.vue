@@ -20,6 +20,7 @@ import {
   UserRound,
 } from "lucide-vue-next";
 import { useI18n } from "@/i18n";
+import type { Locale } from "@/i18n";
 import { launcherClient } from "@/services/launcherClient";
 import type { LaunchJobEvent, LauncherLibrary, LauncherSettings, Modpack } from "@/types/launcher";
 
@@ -39,6 +40,18 @@ const navItems = [
   { id: "settings", labelKey: "nav.settings", icon: Settings },
 ] as const;
 
+const localeShortLabels: Record<Locale, string> = {
+  "zh-CN": "简",
+  "zh-TW": "繁",
+  en: "EN",
+};
+
+const localePreviewLabels: Record<Locale, string> = {
+  "zh-CN": "简体界面",
+  "zh-TW": "繁體介面",
+  en: "English UI",
+};
+
 const packs = computed(() => library.value?.packs ?? []);
 const localizedPacks = computed(() => packs.value.map(localizePack));
 const featuredPack = computed(() => localizedPacks.value.find((pack) => pack.id === library.value?.featuredPackId) ?? null);
@@ -47,6 +60,7 @@ const installedPacks = computed(() => localizedPacks.value.filter((pack) => pack
 const localizedNews = computed(() => library.value?.news.map(localizeNews) ?? []);
 const latestJob = computed(() => jobs.value[0]);
 const activeJob = computed(() => jobs.value.find((job) => job.status === "running"));
+const activeLocaleOption = computed(() => localeOptions.value.find((option) => option.value === locale.value) ?? localeOptions.value[0]);
 const javaDisplayValue = computed(() => {
   if (!settings.value) {
     return "";
@@ -166,6 +180,10 @@ async function saveSetting<Key extends keyof LauncherSettings>(key: Key, value: 
   settings.value = await launcherClient.updateSettings({ [key]: value });
 }
 
+function setLocale(value: Locale) {
+  locale.value = value;
+}
+
 function jobMessage(job: LaunchJobEvent) {
   return translateJobMessage(job.messageKey, job.message);
 }
@@ -213,14 +231,25 @@ function jobMessage(job: LaunchJobEvent) {
         </div>
 
         <div class="top-actions">
-          <label class="locale-picker" :title="t('a11y.language')">
+          <div class="locale-switcher" :title="t('a11y.language')" :aria-label="t('a11y.language')">
             <Globe2 :size="18" />
-            <select v-model="locale" :aria-label="t('a11y.language')">
-              <option v-for="option in localeOptions" :key="option.value" :value="option.value">
-                {{ option.label }}
-              </option>
-            </select>
-          </label>
+            <div class="locale-track">
+              <button
+                v-for="option in localeOptions"
+                :key="option.value"
+                class="locale-chip"
+                :class="{ active: locale === option.value }"
+                type="button"
+                :aria-pressed="locale === option.value"
+                :title="option.label"
+                @click="setLocale(option.value)"
+              >
+                <span class="locale-code">{{ localeShortLabels[option.value] }}</span>
+                <span class="locale-name">{{ option.label }}</span>
+              </button>
+            </div>
+            <strong class="locale-current">{{ localeShortLabels[locale] }}</strong>
+          </div>
           <button class="icon-button" :title="t('top.downloads')">
             <HardDriveDownload :size="19" />
           </button>
@@ -416,6 +445,25 @@ function jobMessage(job: LaunchJobEvent) {
           </div>
 
           <div class="settings-grid">
+            <div class="language-setting">
+              <span>{{ t("a11y.language") }}</span>
+              <div class="language-card-row">
+                <button
+                  v-for="option in localeOptions"
+                  :key="option.value"
+                  class="language-card"
+                  :class="{ active: locale === option.value }"
+                  type="button"
+                  :aria-pressed="locale === option.value"
+                  @click="setLocale(option.value)"
+                >
+                  <span>{{ localeShortLabels[option.value] }}</span>
+                  <strong>{{ option.label }}</strong>
+                  <small>{{ localePreviewLabels[option.value] }}</small>
+                </button>
+              </div>
+              <strong>{{ activeLocaleOption?.label }}</strong>
+            </div>
             <label class="setting-row">
               <span>{{ t("settings.gameDirectory") }}</span>
               <input :value="settings.gameDirectory" @change="saveSetting('gameDirectory', ($event.target as HTMLInputElement).value)" />
